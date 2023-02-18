@@ -4,10 +4,12 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>1c4012c6-c649-44ee-b74b-d8f21870c3cd</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <Folder Include="Data\" />
+	<PackageReference Include="Betalgo.OpenAI.GPT3" Version="6.6.1" />
   </ItemGroup>
 
 </Project>

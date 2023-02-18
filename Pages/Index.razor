@@ -1,5 +1,65 @@
 ﻿@page "/"
-
+@using OpenAI.GPT3;
+@using OpenAI.GPT3.Managers;
+@using OpenAI.GPT3.ObjectModels;
+@using OpenAI.GPT3.ObjectModels.RequestModels;
+@inject IConfiguration _configuration
 <PageTitle>Index</PageTitle>
 
-<h1>OpenAI Explorer</h1>
+<h1>Finish the Sentence</h1>
+<input class="form-control" type="text"
+       @bind="prompt" />
+<br />
+<button class="btn btn-primary"
+        @onclick="CallService">
+    Call The Service
+</button>
+<br />
+<br />
+<h4>Response:</h4>
+<br />
+<p>@response</p>
+@code {
+    string Organization = "";
+    string ApiKey = "";
+    string prompt = "Once upon a time";
+    string response = "";
+    protected override void OnInitialized()
+    {
+        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
+        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+    }
+
+    async Task CallService()
+    {
+        var openAiService = new OpenAIService(new OpenAiOptions()
+            {
+                ApiKey = ApiKey,
+                Organization = Organization
+            });
+
+        var completionResult =
+        await openAiService.Completions
+        .CreateCompletion(new CompletionCreateRequest()
+            {
+                Prompt = prompt,
+                MaxTokens = 5
+            }, Models.Davinci);
+
+        if (completionResult.Successful)
+        {
+            response = completionResult
+            .Choices.FirstOrDefault()?.Text ?? "";
+        }
+        else
+        {
+            if (completionResult.Error == null)
+            {
+                response = "Unknown Error";
+            }
+
+            response =
+            $"{completionResult.Error?.Code}: {completionResult.Error?.Message}";
+        }
+    }
+}

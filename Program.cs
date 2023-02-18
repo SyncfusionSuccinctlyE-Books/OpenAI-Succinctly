@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+// OpenAIService
+using OpenAI.GPT3.Extensions;
+using System.Reflection;
 
 namespace OpenAIExplorer
 {
@@ -8,6 +11,15 @@ namespace OpenAIExplorer
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // OpenAIService
+            builder.Configuration.AddJsonFile(
+                "appsettings.json", optional: true, reloadOnChange: true
+                )
+                .AddEnvironmentVariables()
+                .AddUserSecrets(Assembly.GetExecutingAssembly(), true);
+
+            builder.Services.AddOpenAIService();
 
             // Add services to the container.
             builder.Services.AddRazorPages();
