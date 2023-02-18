@@ -1,0 +1,82 @@
+﻿@page "/simpleimage"
+@using OpenAI.GPT3;
+@using OpenAI.GPT3.Managers;
+@using OpenAI.GPT3.ObjectModels;
+@using OpenAI.GPT3.ObjectModels.RequestModels;
+@using OpenAI.GPT3.Extensions;
+@inject IConfiguration _configuration
+<PageTitle>Simple Image</PageTitle>
+
+<h1>Describe the desired image</h1>
+<input class="form-control" type="text"
+       @bind="prompt" />
+<br />
+<button class="btn btn-primary"
+        @onclick="CallService">
+    Call The Service
+</button>
+<br />
+<br />
+<h4>Response:</h4>
+<br />
+<p>@response</p>
+<p>@((MarkupString)ImageResponse)</p>
+@code {
+    string Organization = "";
+    string ApiKey = "";
+    string prompt = "";
+    string response = "";
+    string ImageResponse = "";
+    protected override void OnInitialized()
+    {
+        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
+        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+
+        prompt = "Pixar style 3D render of a cat ";
+        prompt = prompt + "riding a horse holding a flag, 4k, ";
+        prompt = prompt + "high resolution, trending in artstation";
+    }
+
+    async Task CallService()
+    {
+        response = "Calling service...";
+
+        var openAiService = new OpenAIService(new OpenAiOptions()
+            {
+                ApiKey = ApiKey,
+                Organization = Organization
+            });
+
+        var imageResult =
+        await openAiService.Image
+        .CreateImage(new ImageCreateRequest
+            {
+                Prompt = prompt,
+                N = 2,
+                Size = StaticValues.ImageStatics.Size.Size256,
+                ResponseFormat = StaticValues.ImageStatics.ResponseFormat.Url,
+                User = "TestUser"
+            });
+
+
+        if (imageResult.Successful)
+        {
+            response = "";
+
+            foreach (var image in imageResult.Results)
+            {
+                ImageResponse += $@"<img src=""{image.Url}"" />&nbsp;&nbsp;";
+            }
+        }
+        else
+        {
+            if (imageResult.Error == null)
+            {
+                response = "Unknown Error";
+            }
+
+            response =
+            $"{imageResult.Error?.Code}: {imageResult.Error?.Message}";
+        }
+    }
+}
