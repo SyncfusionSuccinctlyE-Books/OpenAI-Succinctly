@@ -9,7 +9,10 @@
 
   <ItemGroup>
     <Folder Include="Data\" />
-	<PackageReference Include="Betalgo.OpenAI.GPT3" Version="6.6.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenAI-DotNet" Version="4.4.4" />
   </ItemGroup>
 
 </Project>

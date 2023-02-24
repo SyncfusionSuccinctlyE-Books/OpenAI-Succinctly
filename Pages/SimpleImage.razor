@@ -1,9 +1,7 @@
 ﻿@page "/simpleimage"
-@using OpenAI.GPT3;
-@using OpenAI.GPT3.Managers;
-@using OpenAI.GPT3.ObjectModels;
-@using OpenAI.GPT3.ObjectModels.RequestModels;
-@using OpenAI.GPT3.Extensions;
+@using OpenAI;
+@using OpenAI.Images;
+@using OpenAI.Models;
 @inject IConfiguration _configuration
 <PageTitle>Simple Image</PageTitle>
 
@@ -41,42 +39,23 @@
     {
         response = "Calling service...";
 
-        var openAiService = new OpenAIService(new OpenAiOptions()
-            {
-                ApiKey = ApiKey,
-                Organization = Organization
-            });
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-        var imageResult =
-        await openAiService.Image
-        .CreateImage(new ImageCreateRequest
-            {
-                Prompt = prompt,
-                N = 2,
-                Size = StaticValues.ImageStatics.Size.Size256,
-                ResponseFormat = StaticValues.ImageStatics.ResponseFormat.Url,
-                User = "TestUser"
-            });
+        var results = await api.ImagesEndPoint.GenerateImageAsync(prompt, 2, ImageSize.Small);
 
 
-        if (imageResult.Successful)
+        if (results.Count > 0)
         {
             response = "";
 
-            foreach (var image in imageResult.Results)
+            foreach (var image in results)
             {
-                ImageResponse += $@"<img src=""{image.Url}"" />&nbsp;&nbsp;";
+                ImageResponse += $@"<img src=""{image}"" />&nbsp;&nbsp;";
             }
         }
         else
         {
-            if (imageResult.Error == null)
-            {
-                response = "Unknown Error";
-            }
-
-            response =
-            $"{imageResult.Error?.Code}: {imageResult.Error?.Message}";
+            response = "Unknown Error";
         }
     }
 }

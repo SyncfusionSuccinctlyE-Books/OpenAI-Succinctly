@@ -1,8 +1,6 @@
 ﻿@page "/"
-@using OpenAI.GPT3;
-@using OpenAI.GPT3.Managers;
-@using OpenAI.GPT3.ObjectModels;
-@using OpenAI.GPT3.ObjectModels.RequestModels;
+@using OpenAI;
+@using OpenAI.Models;
 @inject IConfiguration _configuration
 <PageTitle>Index</PageTitle>
 
@@ -32,34 +30,13 @@
 
     async Task CallService()
     {
-        var openAiService = new OpenAIService(new OpenAiOptions()
-            {
-                ApiKey = ApiKey,
-                Organization = Organization
-            });
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-        var completionResult =
-        await openAiService.Completions
-        .CreateCompletion(new CompletionCreateRequest()
-            {
-                Prompt = prompt,
-                MaxTokens = 5
-            }, Models.Davinci);
+        var result = await api.CompletionsEndpoint.CreateCompletionAsync(prompt, maxTokens: 100, temperature: 0.1, model: Model.Davinci);
 
-        if (completionResult.Successful)
+        foreach (var completion in result.Completions)
         {
-            response = completionResult
-            .Choices.FirstOrDefault()?.Text ?? "";
-        }
-        else
-        {
-            if (completionResult.Error == null)
-            {
-                response = "Unknown Error";
-            }
-
-            response =
-            $"{completionResult.Error?.Code}: {completionResult.Error?.Message}";
+            response += completion.Text;
         }
     }
 }
