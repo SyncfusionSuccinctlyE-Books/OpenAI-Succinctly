@@ -5,9 +5,8 @@
 <PageTitle>Index</PageTitle>
 
 <h1>Finish the Sentence</h1>
-<input class="form-control" type="text"
-       @bind="prompt" />
-<br />
+<textarea rows="3" cols="75" @bind="prompt"></textarea>
+<br /><br />
 <button class="btn btn-primary"
         @onclick="CallService">
     Call The Service
