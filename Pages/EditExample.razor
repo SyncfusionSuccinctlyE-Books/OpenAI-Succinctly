@@ -1,0 +1,45 @@
+﻿@page "/editsexample"
+@using OpenAI;
+@using OpenAI.Edits;
+@using OpenAI.Models;
+@inject IConfiguration _configuration
+<PageTitle>Edit Example</PageTitle>
+
+<h1>Enter a sentance</h1>
+<textarea rows="2" cols="75" @bind="prompt"></textarea>
+<br />
+<br />
+<button class="btn btn-primary"
+        @onclick="CallService">
+    Fix Spellings
+</button>
+<br />
+<br />
+<h4>Response:</h4>
+<br />
+<p>@response</p>
+@code {
+    string Organization = "";
+    string ApiKey = "";
+    string prompt = "What day of the wek is it?";
+    string response = "";
+    protected override void OnInitialized()
+    {
+        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
+        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+    }
+
+    async Task CallService()
+    {
+        response = "";
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+        var request = new EditRequest(prompt, "Fix the spelling mistakes");
+        var result = await api.EditsEndpoint.CreateEditAsync(request);
+
+        foreach (var completion in result.Choices)
+        {
+            response += completion.Text;
+        }
+    }
+}
