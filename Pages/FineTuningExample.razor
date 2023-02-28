@@ -71,13 +71,13 @@
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
         var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
 
-        var LatteEmbeddingResponse = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(prompt, model);
+        var EmbeddingQueryResponse = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(prompt, model);
 
         foreach (var embedding in embeddingsInCollection)
         {
             if (embedding.Values != null)
             {
-                var similarity = CosineSimilarity(LatteEmbeddingResponse.Data[0].Embedding.Select(d => (float)d).ToArray(), embedding.Values);
+                var similarity = CosineSimilarity(EmbeddingQueryResponse.Data[0].Embedding.Select(d => (float)d).ToArray(), embedding.Values);
                 similarities.Add((embedding.Text, similarity));
             }
         }
