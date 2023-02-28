@@ -8,6 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Data\SentimentSample.jsonl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Data\SentimentSample.jsonl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="OpenAI-DotNet" Version="4.4.4" />
   </ItemGroup>
 

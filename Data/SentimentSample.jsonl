@@ -1,0 +1,4 @@
+{"prompt":"I text on my iPhone ->", "completion":" positive"}
+{"prompt":"I text on my Android ->", "completion":" positive"}
+{"prompt":"I call on my iPhone ->", "completion":" negative"}
+{"prompt":"I call on my Android ->", "completion":" negative"}

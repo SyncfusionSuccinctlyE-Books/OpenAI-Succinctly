@@ -17,11 +17,21 @@
         </li>
     }
 </ul>
+<h4>Upload</h4>
+<button class="btn btn-primary" @onclick="UploadFile">Upload File</button>
+<p>
+    Last File uploaded:
+    @if(fileData != null)
+    {
+    @fileData.FileName 
+    }
+</p>
 
 @code {
     string Organization = "";
     string ApiKey = "";
     List<FileData> ColFileData = new List<FileData>();
+    FileData? fileData;
 
     protected override async Task OnInitializedAsync()
     {
@@ -35,5 +45,12 @@
     {
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
         var files = await api.FilesEndpoint.ListFilesAsync();
+    }
+
+    private async Task UploadFile()
+    {
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        fileData = await api.FilesEndpoint.UploadFileAsync(@"data/SentimentSample.jsonl", "fine-tune");
+        Console.WriteLine(fileData.Id);
     }
 }
