@@ -51,13 +51,16 @@
         var milk = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("milk", model);
         var HotWater = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("hot water", model);
         var chocolate = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chocolate", model);
+        var tea = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("tea", model);
+        var chai = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chai", model);
 
         var embeddings = new List<(string, float)>();
 
         embeddingCollection.Add(new Embedding { Text = "coffee", Values = coffee.Data[0].Embedding.Select(d => (float)d).ToArray() });
         embeddingCollection.Add(new Embedding { Text = "milk", Values = milk.Data[0].Embedding.Select(d => (float)d).ToArray() });
-        embeddingCollection.Add(new Embedding { Text = "hot water", Values = HotWater.Data[0].Embedding.Select(d => (float)d).ToArray() });
-        embeddingCollection.Add(new Embedding { Text = "chocolate", Values = chocolate.Data[0].Embedding.Select(d => (float)d).ToArray() });       
+        embeddingCollection.Add(new Embedding { Text = "chocolate", Values = chocolate.Data[0].Embedding.Select(d => (float)d).ToArray() });      
+        embeddingCollection.Add(new Embedding { Text = "tea", Values = tea.Data[0].Embedding.Select(d => (float)d).ToArray() });
+        embeddingCollection.Add(new Embedding { Text = "chai", Values = chai.Data[0].Embedding.Select(d => (float)d).ToArray() });
     }
 
     async Task CallService()
