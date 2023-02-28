@@ -1,0 +1,130 @@
+﻿@page "/finetuningexample"
+@using OpenAI;
+@using OpenAI.Models;
+@inject IConfiguration _configuration
+<PageTitle>Fine Tuning Example</PageTitle>
+
+<h1>Fine Tuning Example</h1>
+<button class="btn btn-primary" @onclick="CreateEmbeddings">Create Embeddings</button>
+<br />
+<br />
+@if (embeddingCollection.GetAll().Count > 0)
+{
+    <div>
+        <textarea rows="2" cols="25" style="vertical-align:text-top" @bind="prompt"></textarea>
+        <span>&nbsp;</span>
+        <button class="btn btn-success" style="vertical-align:text-top"
+            @onclick="CallService">
+            Search
+        </button>
+    </div>
+    <br />
+    <ul>
+        @foreach (var item in similarities)
+        {
+            <li>
+                @item.Item1 - @item.Item2
+            </li>
+        }
+    </ul>
+}
+@code {
+    string Organization = "";
+    string ApiKey = "";
+    string prompt = "latte";
+    string response = "";
+
+    EmbeddingCollection embeddingCollection = new EmbeddingCollection();
+    List<(string?, float)> similarities = new List<(string?, float)>();
+    protected override void OnInitialized()
+    {
+        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
+        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+    }
+
+    private async Task CreateEmbeddings()
+    {
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+
+        var coffee = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("coffee", model);
+        var milk = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("milk", model);
+        var HotWater = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("hot water", model);
+        var chocolate = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chocolate", model);
+        var tea = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("tea", model);
+        var chai = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chai", model);
+
+        var embeddings = new List<(string, float)>();
+
+        embeddingCollection.Add(new Embedding { Text = "coffee", Values = coffee.Data[0].Embedding.Select(d => (float)d).ToArray() });
+        embeddingCollection.Add(new Embedding { Text = "milk", Values = milk.Data[0].Embedding.Select(d => (float)d).ToArray() });
+        embeddingCollection.Add(new Embedding { Text = "chocolate", Values = chocolate.Data[0].Embedding.Select(d => (float)d).ToArray() });
+        embeddingCollection.Add(new Embedding { Text = "tea", Values = tea.Data[0].Embedding.Select(d => (float)d).ToArray() });
+        embeddingCollection.Add(new Embedding { Text = "chai", Values = chai.Data[0].Embedding.Select(d => (float)d).ToArray() });
+    }
+
+    async Task CallService()
+    {
+        similarities = new List<(string?, float)>();
+        var embeddingsInCollection = embeddingCollection.GetAll();
+
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+
+        var LatteEmbeddingResponse = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(prompt, model);
+
+        foreach (var embedding in embeddingsInCollection)
+        {
+            if (embedding.Values != null)
+            {
+                var similarity = CosineSimilarity(LatteEmbeddingResponse.Data[0].Embedding.Select(d => (float)d).ToArray(), embedding.Values);
+                similarities.Add((embedding.Text, similarity));
+            }
+        }
+
+        // Sort the results by similarity in descending order
+        similarities.Sort((a, b) => b.Item2.CompareTo(a.Item2));
+    }
+
+    // Classes
+
+    public class Embedding
+    {
+        public string? Text { get; set; }
+        public float[]? Values { get; set; }
+    }
+
+    public class EmbeddingCollection
+    {
+        private readonly List<Embedding> _embeddings = new List<Embedding>();
+
+        public void Add(Embedding embedding)
+        {
+            _embeddings.Add(embedding);
+        }
+
+        public List<Embedding> GetAll()
+        {
+            return _embeddings;
+        }
+    }
+
+    private float CosineSimilarity(float[] vector1, float[] vector2)
+    {
+        float dotProduct = 0;
+        float magnitude1 = 0;
+        float magnitude2 = 0;
+
+        for (int i = 0; i < vector1?.Length; i++)
+        {
+            dotProduct += vector1[i] * vector2[i];
+            magnitude1 += vector1[i] * vector1[i];
+            magnitude2 += vector2[i] * vector2[i];
+        }
+
+        magnitude1 = (float)Math.Sqrt(magnitude1);
+        magnitude2 = (float)Math.Sqrt(magnitude2);
+
+        return dotProduct / (magnitude1 * magnitude2);
+    }
+}

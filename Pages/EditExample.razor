@@ -34,7 +34,10 @@
         response = "";
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-        var request = new EditRequest(prompt, "Fix the spelling mistakes");
+        var DavinciEditModel = await api.ModelsEndpoint.GetModelDetailsAsync("text-davinci-edit-001");
+
+        var request = new EditRequest(prompt, "Fix the spelling mistakes", model: DavinciEditModel);
+
         var result = await api.EditsEndpoint.CreateEditAsync(request);
 
         foreach (var completion in result.Choices)
