@@ -13,7 +13,7 @@
     @foreach (var file in ColFileData)
     {
         <li>
-            @file.Id + " -> " + @file.Object + " : " + @file.FileName + " | " + @file.Size + " bytes"
+            @file.Id + " : " + @file.FileName + " | " + @file.Size + " bytes"
         </li>
     }
 </ul>
@@ -45,12 +45,12 @@
     {
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
         var files = await api.FilesEndpoint.ListFilesAsync();
+        ColFileData = files.ToList();
     }
 
     private async Task UploadFile()
     {
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
         fileData = await api.FilesEndpoint.UploadFileAsync(@"data/SentimentSample.jsonl", "fine-tune");
-        Console.WriteLine(fileData.Id);
     }
 }
