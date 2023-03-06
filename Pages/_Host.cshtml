@@ -29,6 +29,13 @@
         <a class="dismiss">🗙</a>
     </div>
 
+    <script>
+        window.ScrollToBottom = (elementName) => {
+            element = document.getElementById(elementName);
+            element.scrollTop = element.scrollHeight - element.clientHeight;
+        }
+    </script>
+
     <script src="_framework/blazor.server.js"></script>
 </body>
 </html>
