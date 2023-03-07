@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenAI-DotNet" Version="5.0.0" />
+    <PackageReference Include="OpenAI-DotNet" Version="5.0.2" />
   </ItemGroup>
 
 </Project>

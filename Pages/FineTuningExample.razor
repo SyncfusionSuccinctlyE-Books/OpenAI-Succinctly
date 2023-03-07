@@ -8,15 +8,33 @@
 <h1>Fine Tuning Example</h1>
 
 <br />
-<h4> Files</h4>
-<ul>
-    @foreach (var file in ColFileData)
-    {
-        <li>
-            @file.Id + " : " + @file.FileName + " | " + @file.Size + " bytes"
-        </li>
-    }
-</ul>
+<h4>Files</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var file in ColFileData)
+        {
+            <tr>
+                <td>
+                    @file.FileName (@file.Size bytes)
+                </td>
+                <td>
+                    <button class="btn btn-primary"
+                        @onclick="(() => DeleteFile(file))">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<br />
 <h4>Upload</h4>
 <button class="btn btn-primary" @onclick="UploadFile">Upload File</button>
 <p>
@@ -52,5 +70,10 @@
     {
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
         fileData = await api.FilesEndpoint.UploadFileAsync(@"data/SentimentSample.jsonl", "fine-tune");
+    }
+
+    void DeleteFile(FileData paramaFile)
+    {
+
     }
 }
