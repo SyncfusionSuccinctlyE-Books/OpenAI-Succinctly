@@ -61,7 +61,7 @@
 <h4>
     <button class="btn btn-secondary"
             @onclick="(() => FineTuneEvents())">
-        Refesh
+        Refresh
     </button> Status
 </h4>
 <br />
@@ -70,6 +70,77 @@
     <p>[@status.CreatedAt](@status.Level) : @status.Message</p>
 }
 
+<!-- FineTuneJobs -->
+@if (colFineTuneJob.Count > 0)
+{
+    <h4>
+        <button class="btn btn-secondary"
+            @onclick="(() => ListFineTuneJobs())">
+            Refesh
+        </button> FineTune Jobs
+    </h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var finetune in colFineTuneJob)
+            {
+                <tr>
+                    <td>
+                        @finetune.Id @finetune.FineTunedModel (@finetune.Status) [@finetune.CreatedAt]
+                    </td>
+                    <td>
+                        <button class="btn btn-danger"
+                        @onclick="(() => DeleteFineTunedModel(finetune))">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+<br />
+
+<!-- Models -->
+@if (colModels.Count > 0)
+{
+    <h4>
+        <button class="btn btn-secondary"
+            @onclick="(() => ListModels())">
+            Refesh
+        </button> Models
+    </h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var model in colModels)
+            {
+                <tr>
+                    <td>
+                        @model.Id [@model.OwnedBy]
+                    </td>
+                    <td>
+                        <button class="btn btn-danger"
+                        @onclick="(() => DeleteModel(model))">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+<br />
 
 @code {
     string Organization = "";
@@ -79,6 +150,8 @@
     FileData? fileData;
     FineTuneJob? fineTuneJob;
     List<Event> colEvents = new List<Event>();
+    List<FineTuneJob> colFineTuneJob = new List<FineTuneJob>();
+    List<Model> colModels = new List<Model>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -86,7 +159,11 @@
         ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
 
         await ListFiles();
+        await ListFineTuneJobs();
+        await ListModels();
     }
+
+    // Files
 
     private async Task ListFiles()
     {
@@ -118,6 +195,8 @@
         await JSRuntime.InvokeVoidAsync("saveAsFile", paramaFile.FileName, Convert.ToBase64String(filecontents.ToArray()));
     }
 
+    // FineTune
+
     private async Task CreateFineTuneJob(FileData paramaFile)
     {
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
@@ -142,5 +221,50 @@
                 colEvents.Add(item);
             }
         }
+    }
+
+    private async Task ListFineTuneJobs()
+    {
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var fineTuneJobs = await api.FineTuningEndpoint.ListFineTuneJobsAsync();
+
+        foreach (var job in fineTuneJobs)
+        {
+            colFineTuneJob.Add(job);
+        }
+    }
+
+
+    private async Task DeleteFineTunedModel(FineTuneJob paramaFineTuneJob)
+    {
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var result = await api.ModelsEndpoint.DeleteFineTuneModelAsync(paramaFineTuneJob.FineTunedModel);
+        await ListFineTuneJobs();
+    }
+
+    // Models
+
+    private async Task ListModels()
+    {
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var models = await api.ModelsEndpoint.GetModelsAsync();
+
+        colModels = new List<Model>();
+
+        foreach (var model in models)
+        {
+            // Only return models owned by this Organization
+            //if (model.OwnedBy == Organization)
+            //{
+                colModels.Add(model);
+            //}
+        }
+    }
+
+    private async Task DeleteModel(Model paramaModel)
+    {
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var result = await api.ModelsEndpoint.DeleteFineTuneModelAsync(paramaModel.Id);
+        await ListModels();
     }
 }
