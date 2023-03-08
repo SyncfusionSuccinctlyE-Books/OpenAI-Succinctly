@@ -1,55 +1,84 @@
 ﻿@page "/finetuningexample"
 @using OpenAI;
 @using OpenAI.Files;
+@using OpenAI.FineTuning;
 @using OpenAI.Models;
+@inject IJSRuntime JSRuntime
 @inject IConfiguration _configuration
 <PageTitle>Fine Tuning Example</PageTitle>
 
 <h1>Fine Tuning Example</h1>
-
 <br />
-<h4>Files</h4>
-<table class="table">
-    <thead>
-        <tr>
-            <th></th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var file in ColFileData)
-        {
+<button class="btn btn-success" @onclick="UploadFile">Upload SentimentSample.jsonl File</button>
+<br />
+<br />
+@if (ColFileData.Count > 0)
+{
+    <h4>
+        <button class="btn btn-secondary"
+            @onclick="(() => ListFiles())">
+            Refesh
+        </button> Files
+    </h4>
+    <table class="table">
+        <thead>
             <tr>
-                <td>
-                    @file.FileName (@file.Size bytes)
-                </td>
-                <td>
-                    <button class="btn btn-primary"
-                        @onclick="(() => DeleteFile(file))">
-                        Delete
-                    </button>
-                </td>
+                <th></th>
+                <th></th>
             </tr>
-        }
-    </tbody>
-</table>
-
+        </thead>
+        <tbody>
+            @foreach (var file in ColFileData)
+            {
+                <tr>
+                    <td>
+                        <a href="javascript:void(0)" onclick="@(() => DownloadFile(file))">
+                            @file.FileName
+                        </a> (@file.Status - @file.Size bytes) [@file.CreatedAt]
+                    </td>
+                    <td>
+                        <!--  Only allow fine-tune jobs to be created -->
+                        <!--  for files with the purpose "fine-tune" -->
+                        @if (file.Purpose == "fine-tune")
+                        {
+                            <button class="btn btn-success"
+                        @onclick="(() => CreateFineTuneJob(file))">
+                                Create Fine Tune Job
+                            </button>
+                        }
+                        &nbsp;
+                        <button class="btn btn-danger"
+                        @onclick="(() => DeleteFile(file))">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 <br />
-<h4>Upload</h4>
-<button class="btn btn-primary" @onclick="UploadFile">Upload File</button>
-<p>
-    Last File uploaded:
-    @if(fileData != null)
-    {
-    @fileData.FileName 
-    }
-</p>
+<h4>
+    <button class="btn btn-secondary"
+            @onclick="(() => FineTuneEvents())">
+        Refesh
+    </button> Status
+</h4>
+<br />
+@foreach (var status in colEvents)
+{
+    <p>[@status.CreatedAt](@status.Level) : @status.Message</p>
+}
+
 
 @code {
     string Organization = "";
     string ApiKey = "";
     List<FileData> ColFileData = new List<FileData>();
+
     FileData? fileData;
+    FineTuneJob? fineTuneJob;
+    List<Event> colEvents = new List<Event>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,11 +98,49 @@
     private async Task UploadFile()
     {
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-        fileData = await api.FilesEndpoint.UploadFileAsync(@"data/SentimentSample.jsonl", "fine-tune");
+        fileData = await api.FilesEndpoint.UploadFileAsync(@"SampleData/SentimentSample.jsonl", "fine-tune");
     }
 
-    void DeleteFile(FileData paramaFile)
+    private async Task DeleteFile(FileData paramaFile)
     {
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var result = await api.FilesEndpoint.DeleteFileAsync(paramaFile);
+        await ListFiles();
+    }
 
+    private async Task DownloadFile(FileData paramaFile)
+    {
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var downloadedFilePath = await api.FilesEndpoint.DownloadFileAsync(paramaFile, "data");
+
+        // load the file at downloadedFilePath
+        var filecontents = System.IO.File.ReadAllBytes(downloadedFilePath);
+        await JSRuntime.InvokeVoidAsync("saveAsFile", paramaFile.FileName, Convert.ToBase64String(filecontents.ToArray()));
+    }
+
+    private async Task CreateFineTuneJob(FileData paramaFile)
+    {
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var request = new CreateFineTuneJobRequest(paramaFile);
+        fineTuneJob = await api.FineTuningEndpoint.CreateFineTuneJobAsync(request);
+
+        await FineTuneEvents();
+    }
+
+    private async Task FineTuneEvents()
+    {
+        if (fineTuneJob != null)
+        {
+            colEvents = new List<Event>();
+
+            var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+            var Events = await api.FineTuningEndpoint.ListFineTuneEventsAsync(fineTuneJob);
+
+            foreach (var item in Events)
+            {
+                colEvents.Add(item);
+            }
+        }
     }
 }

@@ -12,13 +12,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Data\SentimentSample.jsonl">
+    <Content Include="SampleData\SentimentSample.jsonl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="OpenAI-DotNet" Version="5.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\" />
   </ItemGroup>
 
 </Project>
