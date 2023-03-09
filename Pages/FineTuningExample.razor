@@ -57,19 +57,15 @@
         </tbody>
     </table>
 }
-<br />
-<h4>
-    <button class="btn btn-secondary"
-            @onclick="(() => FineTuneEvents())">
-        Refresh
-    </button> Status
-</h4>
-<br />
-@foreach (var status in colEvents)
+@if (colEvents.Count > 0)
 {
-    <p>[@status.CreatedAt](@status.Level) : @status.Message</p>
+    <h4>Fine Tune Events</h4>
+    <br />
+    @foreach (var status in colEvents)
+    {
+        <p>[@status.CreatedAt](@status.Level) : @status.Message</p>
+    }
 }
-
 <!-- FineTuneJobs -->
 @if (colFineTuneJob.Count > 0)
 {
@@ -253,10 +249,10 @@
 
         foreach (var model in models)
         {
-            // Only return models owned by this Organization
-            //if (model.OwnedBy == Organization)
+            //// Only return models owned by this Organization
+            //if (model.OwnedBy == api.OpenAIAuthentication.OrganizationId)
             //{
-                colModels.Add(model);
+               colModels.Add(model);
             //}
         }
     }
