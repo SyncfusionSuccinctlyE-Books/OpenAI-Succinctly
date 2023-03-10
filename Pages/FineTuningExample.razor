@@ -6,7 +6,12 @@
 @inject IJSRuntime JSRuntime
 @inject IConfiguration _configuration
 <PageTitle>Fine Tuning Example</PageTitle>
-
+<style>
+    .scrollable-list {
+        height: 200px;
+        overflow-y: scroll;
+    }
+</style>
 <h1>Fine Tuning Example</h1>
 <br />
 <button class="btn btn-success" @onclick="UploadFile">Upload SentimentSample.jsonl File</button>
@@ -67,7 +72,7 @@
     }
 }
 <!-- FineTuneJobs -->
-@if (colFineTuneJob.Count > 0)
+@if (colFineTuneJob.Any())
 {
     <h4>
         <button class="btn btn-secondary"
@@ -75,30 +80,14 @@
             Refesh
         </button> FineTune Jobs
     </h4>
-    <table class="table">
-        <thead>
-            <tr>
-                <th></th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var finetune in colFineTuneJob)
+    <div class="scrollable-list">
+        <ul>
+            @foreach (var job in colFineTuneJob)
             {
-                <tr>
-                    <td>
-                        @finetune.Id @finetune.FineTunedModel (@finetune.Status) [@finetune.CreatedAt]
-                    </td>
-                    <td>
-                        <button class="btn btn-danger"
-                        @onclick="(() => DeleteFineTunedModel(finetune))">
-                            Delete
-                        </button>
-                    </td>
-                </tr>
+                <li>@job.Id @job.FineTunedModel (@job.Status) [@job.CreatedAt]</li>
             }
-        </tbody>
-    </table>
+        </ul>
+    </div>
 }
 <br />
 
@@ -123,7 +112,7 @@
             {
                 <tr>
                     <td>
-                        @model.Id [@model.OwnedBy]
+                        @model.Id
                     </td>
                     <td>
                         <button class="btn btn-danger"
@@ -249,11 +238,11 @@
 
         foreach (var model in models)
         {
-            //// Only return models owned by this Organization
-            //if (model.OwnedBy == api.OpenAIAuthentication.OrganizationId)
-            //{
-               colModels.Add(model);
-            //}
+            // Only return models not owned by openai
+            if (!model.OwnedBy.Contains("openai") && !model.OwnedBy.Contains("system"))
+            {
+                colModels.Add(model);
+            }
         }
     }
 
