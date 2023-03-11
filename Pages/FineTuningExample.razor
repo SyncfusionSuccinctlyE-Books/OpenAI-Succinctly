@@ -297,7 +297,11 @@
 
             var objModel = await api.ModelsEndpoint.GetModelDetailsAsync(CompletionModel);
 
-            var result = await api.CompletionsEndpoint.CreateCompletionAsync(CompletionPrompt, maxTokens: 100, temperature: 0.1, model: objModel);
+            List<string> StopSequence = new List<string>() { "->", "." };
+
+            var result = await api.CompletionsEndpoint.CreateCompletionAsync(
+                CompletionPrompt, maxTokens: 100, echo: false,
+                temperature: 0.1, stopSequences: StopSequence, model: objModel);
 
             foreach (var completion in result.Completions)
             {
