@@ -71,6 +71,7 @@
         <p>[@status.CreatedAt](@status.Level) : @status.Message</p>
     }
 }
+
 <!-- FineTuneJobs -->
 @if (colFineTuneJob.Any())
 {
@@ -82,14 +83,15 @@
     </h4>
     <div class="scrollable-list">
         <ul>
-            @foreach (var job in colFineTuneJob)
+            @foreach (var job in colFineTuneJob.OrderByDescending(x => x.CreatedAt))
             {
                 <li>@job.Id @job.FineTunedModel (@job.Status) [@job.CreatedAt]</li>
             }
         </ul>
     </div>
+    <br />
 }
-<br />
+
 
 <!-- Models -->
 @if (colModels.Count > 0)
@@ -127,6 +129,34 @@
 }
 <br />
 
+<!-- Completion -->
+@if (colModels.Count > 0)
+{
+    <h4>
+        <button class="btn btn-secondary"
+            @onclick="(() => ListModels())">
+            Refesh
+        </button> Completions
+    </h4>
+    <p>
+        Model:<span>&nbsp;</span>
+        <select id="Completion" style="width:400px" @bind="@CompletionModel">
+            <option value="">Select Model</option>
+            @foreach (var model in colModels)
+            {
+                <option value="@model.Id">@model.Id</option>
+            }
+        </select>
+        <span>&nbsp;</span>
+        <input id="newJobName" type="text" style="width:400px" @bind="@CompletionPrompt" />
+        <span>&nbsp;</span>
+        <button type="button" class="btn btn-primary" @onclick="(() => SubmitCompletion())">Submit</button>
+    </p>
+    <br />
+    <p>@CompletionResponse</p>
+    <br />
+}
+
 @code {
     string Organization = "";
     string ApiKey = "";
@@ -137,7 +167,9 @@
     List<Event> colEvents = new List<Event>();
     List<FineTuneJob> colFineTuneJob = new List<FineTuneJob>();
     List<Model> colModels = new List<Model>();
-
+    string CompletionModel = "";
+    string CompletionPrompt = "I text on my iPhone ->";
+    string CompletionResponse = "";
     protected override async Task OnInitializedAsync()
     {
         Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
@@ -251,5 +283,26 @@
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
         var result = await api.ModelsEndpoint.DeleteFineTuneModelAsync(paramaModel.Id);
         await ListModels();
+    }
+
+    // Completion
+
+    private async Task SubmitCompletion()
+    {
+        if (CompletionModel != "")
+        {
+            CompletionResponse = "";
+
+            var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+            var objModel = await api.ModelsEndpoint.GetModelDetailsAsync(CompletionModel);
+
+            var result = await api.CompletionsEndpoint.CreateCompletionAsync(CompletionPrompt, maxTokens: 100, temperature: 0.1, model: objModel);
+
+            foreach (var completion in result.Completions)
+            {
+                CompletionResponse += completion.Text;
+            }
+        }
     }
 }
