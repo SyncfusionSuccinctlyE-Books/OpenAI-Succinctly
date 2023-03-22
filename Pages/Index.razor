@@ -6,7 +6,8 @@
 
 <h1>Finish the Sentence</h1>
 <textarea rows="3" cols="75" @bind="prompt"></textarea>
-<br /><br />
+<br />
+<br />
 <button class="btn btn-primary"
         @onclick="CallService">
     Call The Service
@@ -17,22 +18,43 @@
 <br />
 <p>@response</p>
 @code {
+    // Define variables
     string Organization = "";
     string ApiKey = "";
     string prompt = "Once upon a time";
     string response = "";
+
+    // OnInitialized method is called when the component is initialized
     protected override void OnInitialized()
     {
-        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
-        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+        // Get the OpenAI organization ID and API key from the
+        // application's configuration settings
+        Organization =
+        _configuration["OpenAIServiceOptions:Organization"] ?? "";
+        ApiKey =
+        _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
     }
 
+    // CallService method: Calls the OpenAI API to
+    // generate text completions
     async Task CallService()
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        // Create a new instance of OpenAIClient using
+        // the ApiKey and Organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-        var result = await api.CompletionsEndpoint.CreateCompletionAsync(prompt, maxTokens: 100, temperature: 0.1, model: Model.Davinci);
+        // Call the CompletionsEndpoint.CreateCompletionAsync
+        // method with the given parameters
+        // * maxTokens is set to 100, which limits the response
+        // to a maximum of 100 tokens.
+        // * temperature is set to 0.1, which controls the randomness
+        // Lower values produce more deterministic outputs.
+        var result = await api.CompletionsEndpoint.CreateCompletionAsync(
+            prompt, maxTokens: 100, temperature: 0.1, model: Model.Davinci);
 
+        // Iterate over the completions and
+        // append them to the response string
         foreach (var completion in result.Completions)
         {
             response += completion.Text;
