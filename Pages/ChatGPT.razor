@@ -25,12 +25,12 @@
         margin-bottom: 20px;
     }
 
-        .assistant:after, .user:after {
-            content: '';
-            border: 20px solid transparent;
-            position: absolute;
-            margin-top: -30px;
-        }
+    .assistant:after, .user:after {
+        content: '';
+        border: 20px solid transparent;
+        position: absolute;
+        margin-top: -30px;
+    }
 
     .user {
         background: #03a9f4;
@@ -79,7 +79,8 @@
                     <div class="msg">
                         @item.Prompt
                         <br /><br />
-                        <div style="font-size:xx-small;"><i><b>(@item.Tokens)</b> Tokens</i></div>
+                        <div style="font-size:xx-small;">
+                            <i><b>(@item.Tokens)</b> Tokens</i></div>
                     </div>
                 </div>
             }
@@ -95,7 +96,8 @@
                             @((MarkupString)item.Prompt)
                         }
                         <br /><br />
-                        <div style="font-size:xx-small;"><i><b>(@item.Tokens)</b> Tokens</i></div>
+                        <div style="font-size:xx-small;">
+                            <i><b>(@item.Tokens)</b> Tokens</i></div>
                     </div>
                 </div>
             }
@@ -106,9 +108,11 @@
 {
     <textarea rows="3" cols="60" @bind="prompt" />
     <br />
-    <button class="btn btn-primary" @onclick="CallChatGPT">Call ChatGPT</button>
+    <button class="btn btn-primary" 
+    @onclick="CallChatGPT">Call ChatGPT</button>
     <span>&nbsp;</span>
-    <button class="btn btn-info" @onclick="RestartChatGPT">Restart</button>
+    <button class="btn btn-info" 
+    @onclick="RestartChatGPT">Restart</button>
 }
 else
 {
@@ -132,15 +136,23 @@ else
         ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
     }
 
+    // This method is called after the component has finished rendering
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // Use a try-catch block to handle any exceptions that might occur
         try
         {
-            await _jsRuntime.InvokeAsync<string>("ScrollToBottom", "chatcontainer");
+            // Call the JavaScript function "ScrollToBottom" 
+            // with the argument "chatcontainer"
+            // This function is responsible for scrolling the chat 
+            // container to the bottom
+            await _jsRuntime.InvokeAsync<string>(
+                "ScrollToBottom", "chatcontainer");
         }
         catch
         {
-            // do nothing if this fails
+            // If any exception occurs while calling the 
+            // JavaScript function,do nothing and ignore the error
         }
     }
 
