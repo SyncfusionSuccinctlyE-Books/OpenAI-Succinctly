@@ -1,0 +1,55 @@
+﻿@page "/whisperexample"
+@using OpenAI;
+@using OpenAI.Audio;
+@using OpenAI.Edits;
+@using OpenAI.Models;
+@inject IConfiguration _configuration
+<PageTitle>Whisper Example</PageTitle>
+
+<h1>Whisper Transcription</h1>
+
+<button class="btn btn-primary"
+        @onclick="UploadFile">
+    Upload File
+</button>
+<br />
+<br />
+<h4>Response:</h4>
+@if (!Processing)
+{
+    <textarea rows="10" cols="75" @bind="response" />
+}
+else
+{
+    <br>
+    <h4>Processing...</h4>
+}
+@code {
+    string Organization = "";
+    string ApiKey = "";
+    string response = "";
+    bool Processing = false;
+
+    protected override void OnInitialized()
+    {
+        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
+        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+    }
+
+    private async Task UploadFile()
+    {
+        response = "";
+        Processing = true;
+        StateHasChanged();
+
+        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+        string audioAssetPath = @"SampleData/Calling OpenAI GPT-3 From Microsoft Blazor.mp4";
+
+        var request = new AudioTranscriptionRequest(Path.GetFullPath(audioAssetPath), language: "en");
+        response = await api.AudioEndpoint.CreateTranscriptionAsync(request);
+
+        Processing = false;
+        StateHasChanged();
+    }
+}

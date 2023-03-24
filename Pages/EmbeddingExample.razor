@@ -33,19 +33,26 @@
     string ApiKey = "";
     string prompt = "latte";
 
+    // Declare an embedding collection and a list to store similarities
     EmbeddingCollection embeddingCollection = new EmbeddingCollection();
     List<(string?, float)> similarities = new List<(string?, float)>();
+
+    // Initialize the component by setting the organization and API key
     protected override void OnInitialized()
     {
         Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
         ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
     }
 
+    // Create embeddings for the given terms using the OpenAI API
     private async Task CreateEmbeddings()
     {
+        // Create an instance of the OpenAI client
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        // Get the model details
         var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
 
+        // Create embeddings for each term
         var coffee = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("coffee", model);
         var milk = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("milk", model);
         var HotWater = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("hot water", model);
@@ -53,30 +60,40 @@
         var tea = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("tea", model);
         var chai = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chai", model);
 
-        var embeddings = new List<(string, float)>();
-
+        // Add the embeddings to the embedding collection
         embeddingCollection.Add(new Embedding { Text = "coffee", Values = coffee.Data[0].Embedding.Select(d => (float)d).ToArray() });
         embeddingCollection.Add(new Embedding { Text = "milk", Values = milk.Data[0].Embedding.Select(d => (float)d).ToArray() });
-        embeddingCollection.Add(new Embedding { Text = "chocolate", Values = chocolate.Data[0].Embedding.Select(d => (float)d).ToArray() });      
+        embeddingCollection.Add(new Embedding { Text = "chocolate", Values = chocolate.Data[0].Embedding.Select(d => (float)d).ToArray() });
         embeddingCollection.Add(new Embedding { Text = "tea", Values = tea.Data[0].Embedding.Select(d => (float)d).ToArray() });
         embeddingCollection.Add(new Embedding { Text = "chai", Values = chai.Data[0].Embedding.Select(d => (float)d).ToArray() });
     }
 
+    // Call the OpenAI service to calculate similarities between embeddings
     async Task CallService()
     {
+        // Reset the similarities list
         similarities = new List<(string?, float)>();
+        // Get all embeddings from the collection
         var embeddingsInCollection = embeddingCollection.GetAll();
 
+        // Create an instance of the OpenAI client
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        // Get the model details
         var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
 
+        // Create an embedding for the user's input prompt
         var EmbeddingQueryResponse = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(prompt, model);
 
+        // Calculate the similarity between the prompt's embedding and each existing embedding
         foreach (var embedding in embeddingsInCollection)
         {
             if (embedding.Values != null)
             {
-                var similarity = CosineSimilarity(EmbeddingQueryResponse.Data[0].Embedding.Select(d => (float)d).ToArray(), embedding.Values);
+                var similarity = 
+                CosineSimilarity(
+                    EmbeddingQueryResponse.Data[0].Embedding.Select(d => (float)d).ToArray(), 
+                    embedding.Values);
+
                 similarities.Add((embedding.Text, similarity));
             }
         }
@@ -95,13 +112,16 @@
 
     public class EmbeddingCollection
     {
+        // Declare a private list to store Embedding objects
         private readonly List<Embedding> _embeddings = new List<Embedding>();
 
+        // Add an Embedding object to the list of embeddings
         public void Add(Embedding embedding)
         {
             _embeddings.Add(embedding);
         }
 
+        // Retrieve all Embedding objects in the list
         public List<Embedding> GetAll()
         {
             return _embeddings;
@@ -110,20 +130,24 @@
 
     private float CosineSimilarity(float[] vector1, float[] vector2)
     {
+        // Initialize variables for dot product and magnitudes of the vectors
         float dotProduct = 0;
         float magnitude1 = 0;
         float magnitude2 = 0;
 
+        // Iterate through the vectors and calculate the dot product and magnitudes
         for (int i = 0; i < vector1?.Length; i++)
         {
-            dotProduct += vector1[i] * vector2[i];
-            magnitude1 += vector1[i] * vector1[i];
-            magnitude2 += vector2[i] * vector2[i];
+            dotProduct += vector1[i] * vector2[i]; // Calculate dot product
+            magnitude1 += vector1[i] * vector1[i]; // Calculate squared magnitude of vector1
+            magnitude2 += vector2[i] * vector2[i]; // Calculate squared magnitude of vector2
         }
 
+        // Take the square root of the squared magnitudes to obtain actual magnitudes
         magnitude1 = (float)Math.Sqrt(magnitude1);
         magnitude2 = (float)Math.Sqrt(magnitude2);
 
+        // Calculate and return cosine similarity by dividing dot product by the product of magnitudes
         return dotProduct / (magnitude1 * magnitude2);
     }
 }
