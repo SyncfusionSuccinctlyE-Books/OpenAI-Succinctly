@@ -35,27 +35,42 @@
         prompt = prompt + "high resolution, trending in artstation";
     }
 
+    // This code defines an asynchronous method, CallService, 
+    // which calls the OpenAI DALL-E API to generate images based on a given prompt.
     async Task CallService()
     {
-        response = "Calling service...";
+        // Set initial response message
+        response = "Calling service..."; 
 
+        // Create a new instance of the OpenAIClient, 
+        // passing in an API key and organization to authenticate the client
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-        var results = await api.ImagesEndPoint.GenerateImageAsync(prompt, 2, ImageSize.Small);
+        // Call the GenerateImageAsync method of the ImagesEndPoint object 
+        // of the OpenAIClient to generate images based on the given prompt.
+        // The method is called asynchronously and the results are stored in the 
+        // 'results' variable. The method is called with two arguments, 
+        // 'prompt' and '2', specifying the text prompt and the number of images 
+        // to generate, respectively. The 'ImageSize.Small' argument specifies that
+        // the generated images should be small in size.
+        var results = 
+        await api.ImagesEndPoint.GenerateImageAsync(prompt, 2, ImageSize.Small);
 
-
-        if (results.Count > 0)
+        if (results.Count > 0) 
         {
-            response = "";
+            response = ""; 
 
+            // Iterate through each generated image and append the HTML code 
+            // for displaying the image to the 'ImageResponse' variable.
             foreach (var image in results)
             {
                 ImageResponse += $@"<img src=""{image}"" />&nbsp;&nbsp;";
             }
         }
-        else
+        else // If there are no generated images
         {
-            response = "Unknown Error";
+            // Set response message to indicate error
+            response = "Unknown Error"; 
         }
     }
 }
