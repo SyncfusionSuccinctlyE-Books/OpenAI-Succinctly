@@ -38,17 +38,36 @@ else
 
     private async Task UploadFile()
     {
+        // Set response to empty string
         response = "";
+
+        // Set Processing to true
         Processing = true;
+
+        // Trigger a UI refresh
         StateHasChanged();
 
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        // Create an instance of the OpenAIClient
+        // using the provided API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-        string audioAssetPath = @"SampleData/Calling OpenAI GPT-3 From Microsoft Blazor.mp4";
+        // Set the audioAssetPath to a sample audio file
+        string audioAssetPath =
+        @"SampleData/Calling OpenAI GPT-3 From Microsoft Blazor.mp4";
 
-        var request = new AudioTranscriptionRequest(Path.GetFullPath(audioAssetPath), language: "en");
-        response = await api.AudioEndpoint.CreateTranscriptionAsync(request);
+        // Create an AudioTranscriptionRequest object
+        // with the audio file path and language
+        var request =
+        new AudioTranscriptionRequest(
+            Path.GetFullPath(audioAssetPath), language: "en");
 
+        // Perform audio transcription using the
+        // OpenAI API and set the response string
+        response =
+        await api.AudioEndpoint.CreateTranscriptionAsync(request);
+
+        // Set Processing to false and trigger a UI refresh
         Processing = false;
         StateHasChanged();
     }
