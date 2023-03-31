@@ -83,6 +83,12 @@
         var chai =
         await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chai", model);
 
+        var car =
+        await api.EmbeddingsEndpoint.CreateEmbeddingAsync("car", model);
+
+        var tire =
+        await api.EmbeddingsEndpoint.CreateEmbeddingAsync("tire", model);
+
         // Add the embeddings to the embedding collection
         embeddingCollection.Add(
             new Embedding
@@ -115,7 +121,14 @@
         embeddingCollection.Add(
             new Embedding
                 {
-                    Text = "chai",
+                    Text = "car",
+                    Values = chai.Data[0].Embedding.Select(d => (float)d).ToArray()
+                });
+
+        embeddingCollection.Add(
+            new Embedding
+                {
+                    Text = "tire",
                     Values = chai.Data[0].Embedding.Select(d => (float)d).ToArray()
                 });
     }
