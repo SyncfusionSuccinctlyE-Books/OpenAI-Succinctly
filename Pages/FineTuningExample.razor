@@ -14,7 +14,10 @@
 </style>
 <h1>Fine Tuning Example</h1>
 <br />
-<button class="btn btn-success" @onclick="UploadFile">Upload SentimentSample.jsonl File</button>
+<button class="btn btn-success"
+        @onclick="UploadFile">
+    Upload SentimentSample.jsonl File
+</button>
 <br />
 <br />
 @if (ColFileData.Count > 0)
@@ -37,7 +40,8 @@
             {
                 <tr>
                     <td>
-                        <a href="javascript:void(0)" onclick="@(() => DownloadFile(file))">
+                        <a href="javascript:void(0)"
+                           onclick="@(() => DownloadFile(file))">
                             @file.FileName
                         </a> (@file.Status - @file.Size bytes) [@file.CreatedAt]
                     </td>
@@ -83,7 +87,8 @@
     </h4>
     <div class="scrollable-list">
         <ul>
-            @foreach (var job in colFineTuneJob.OrderByDescending(x => x.CreatedAt))
+            @foreach (
+           var job in colFineTuneJob.OrderByDescending(x => x.CreatedAt))
             {
                 <li>@job.Id @job.FineTunedModel (@job.Status) [@job.CreatedAt]</li>
             }
@@ -140,7 +145,8 @@
     </h4>
     <p>
         Model:<span>&nbsp;</span>
-        <select id="Completion" style="width:400px" @bind="@CompletionModel">
+        <select id="Completion" style="width:400px"
+            @bind="@CompletionModel">
             <option value="">Select Model</option>
             @foreach (var model in colModels)
             {
@@ -148,9 +154,13 @@
             }
         </select>
         <span>&nbsp;</span>
-        <input id="newJobName" type="text" style="width:400px" @bind="@CompletionPrompt" />
+        <input id="newJobName" type="text" style="width:400px"
+           @bind="@CompletionPrompt" />
         <span>&nbsp;</span>
-        <button type="button" class="btn btn-primary" @onclick="(() => SubmitCompletion())">Submit</button>
+        <button type="button" class="btn btn-primary"
+            @onclick="(() => SubmitCompletion())">
+            Submit
+        </button>
     </p>
     <br />
     <p>@CompletionResponse</p>
@@ -158,81 +168,169 @@
 }
 
 @code {
+    // Declare variables for organization, API key,
+    // and collections of objects
     string Organization = "";
     string ApiKey = "";
     List<FileData> ColFileData = new List<FileData>();
 
+    // Declare nullable objects for file data and fine-tuning job
     FileData? fileData;
     FineTuneJob? fineTuneJob;
+
+    // Declare collections for events, fine-tuning jobs, and models
     List<Event> colEvents = new List<Event>();
     List<FineTuneJob> colFineTuneJob = new List<FineTuneJob>();
     List<Model> colModels = new List<Model>();
+
+    // Declare variables for completion model, prompt, and response
     string CompletionModel = "";
     string CompletionPrompt = "I text on my iPhone ->";
     string CompletionResponse = "";
+
+    // Initialize component, set organization and API key,
+    // and call listing methods
     protected override async Task OnInitializedAsync()
     {
-        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
-        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+        // Set the organization value from the configuration
+        // or use an empty string if not found
+        Organization =
+        _configuration["OpenAIServiceOptions:Organization"] ?? "";
 
+        // Set the API key value from the configuration
+        // or use an empty string if not found
+        ApiKey =
+        _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+
+        // Call the ListFiles method to list files
+        // using the OpenAI API
         await ListFiles();
+
+        // Call the ListFineTuneJobs method to list
+        // fine-tune jobs using the OpenAI API
         await ListFineTuneJobs();
+
+        // Call the ListModels method to list
+        // models using the OpenAI API
         await ListModels();
     }
 
     // Files
 
+    // List files using OpenAI API
     private async Task ListFiles()
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        // Create a new OpenAI API client with
+        // the provided API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+        // Call the ListFilesAsync method to
+        // fetch files from the OpenAI API
         var files = await api.FilesEndpoint.ListFilesAsync();
+
+        // Convert the fetched files to a list
+        // and assign it to the ColFileData variable
         ColFileData = files.ToList();
     }
 
+    // Upload file using OpenAI API
     private async Task UploadFile()
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-        fileData = await api.FilesEndpoint.UploadFileAsync(@"SampleData/SentimentSample.jsonl", "fine-tune");
+        // Create a new OpenAI API client with
+        // the provided API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+        // Upload the file located at "SampleData/SentimentSample.jsonl"
+        // for fine-tuning using the OpenAI API
+        fileData =
+        await api.FilesEndpoint.UploadFileAsync(
+        @"SampleData/SentimentSample.jsonl", "fine-tune");
     }
 
+    // Delete file using OpenAI API
     private async Task DeleteFile(FileData paramaFile)
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        // Create a new OpenAI API client with the provided
+        // API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+        // Delete the specified file (paramaFile) using the OpenAI API
         var result = await api.FilesEndpoint.DeleteFileAsync(paramaFile);
+
+        // Update the list of files by calling the ListFiles method
         await ListFiles();
     }
 
+    // Download file using OpenAI API
     private async Task DownloadFile(FileData paramaFile)
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-        var downloadedFilePath = await api.FilesEndpoint.DownloadFileAsync(paramaFile, "data");
+        // Create a new OpenAI API client with the provided
+        // API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-        // load the file at downloadedFilePath
+        // Download the specified file (paramaFile) using the
+        // OpenAI API and store the path to the downloaded file
+        var downloadedFilePath =
+        await api.FilesEndpoint.DownloadFileAsync(paramaFile, "data");
+
+        // Load the content of the downloaded file into a byte array
         var filecontents = System.IO.File.ReadAllBytes(downloadedFilePath);
-        await JSRuntime.InvokeVoidAsync("saveAsFile", paramaFile.FileName, Convert.ToBase64String(filecontents.ToArray()));
+
+        // Invoke a JavaScript function to save the downloaded
+        // file content as a file with the original file name
+        await JSRuntime.InvokeVoidAsync(
+        "saveAsFile",
+        paramaFile.FileName,
+        Convert.ToBase64String(filecontents.ToArray()));
     }
 
     // FineTune
 
     private async Task CreateFineTuneJob(FileData paramaFile)
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-        var request = new CreateFineTuneJobRequest(paramaFile);
-        fineTuneJob = await api.FineTuningEndpoint.CreateFineTuneJobAsync(request);
+        // Create a new OpenAI API client with the
+        // provided API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
+        // Create a new fine-tuning job request with
+        // the specified file (paramaFile)
+        var request =
+        new CreateFineTuneJobRequest(paramaFile);
+
+        // Create a fine-tuning job using the OpenAI API
+        // and store the result in the fineTuneJob variable
+        fineTuneJob =
+        await api.FineTuningEndpoint.CreateFineTuneJobAsync(request);
+
+        // Call the FineTuneEvents method to list events
+        // related to the created fine-tuning job
         await FineTuneEvents();
     }
 
     private async Task FineTuneEvents()
     {
+        // Check if a fine-tuning job exists
         if (fineTuneJob != null)
         {
+            // Initialize a new list of events for the fine-tuning job
             colEvents = new List<Event>();
 
-            var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+            // Create a new OpenAI API client with the
+            // provided API key and organization
+            var api =
+            new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-            var Events = await api.FineTuningEndpoint.ListFineTuneEventsAsync(fineTuneJob);
+            // Fetch the events associated with the
+            // fine-tuning job using the OpenAI API
+            var Events =
+            await api.FineTuningEndpoint.ListFineTuneEventsAsync(fineTuneJob);
 
+            // Add each fetched event to the colEvents list
             foreach (var item in Events)
             {
                 colEvents.Add(item);
@@ -242,20 +340,38 @@
 
     private async Task ListFineTuneJobs()
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-        var fineTuneJobs = await api.FineTuningEndpoint.ListFineTuneJobsAsync();
+        // Create a new OpenAI API client with the provided
+        // API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
+        // Fetch the list of fine-tuning jobs using the OpenAI API
+        var fineTuneJobs =
+        await api.FineTuningEndpoint.ListFineTuneJobsAsync();
+
+        // Add each fetched fine-tuning job to the colFineTuneJob list
         foreach (var job in fineTuneJobs)
         {
             colFineTuneJob.Add(job);
         }
     }
 
-
     private async Task DeleteFineTunedModel(FineTuneJob paramaFineTuneJob)
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-        var result = await api.ModelsEndpoint.DeleteFineTuneModelAsync(paramaFineTuneJob.FineTunedModel);
+        // Create a new OpenAI API client with the provided
+        //  API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+        // Delete the fine-tuned model associated with the
+        // specified fine-tuning job (paramaFineTuneJob)
+        // using the OpenAI API
+        var result =
+        await api.ModelsEndpoint.DeleteFineTuneModelAsync(
+        paramaFineTuneJob.FineTunedModel);
+
+        // Update the list of fine-tuning jobs by calling
+        // the ListFineTuneJobs method
         await ListFineTuneJobs();
     }
 
@@ -263,16 +379,26 @@
 
     private async Task ListModels()
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-        var models = await api.ModelsEndpoint.GetModelsAsync();
+        // Create a new OpenAI API client with the provided
+        // API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
+        // Fetch the list of models using the OpenAI API
+        var models =
+        await api.ModelsEndpoint.GetModelsAsync();
+
+        // Initialize a new list to store filtered models
         colModels = new List<Model>();
 
+        // Iterate through the fetched models
         foreach (var model in models)
         {
-            // Only return models not owned by openai
-            if (!model.OwnedBy.Contains("openai") && !model.OwnedBy.Contains("system"))
+            // Filter out models owned by "openai" or "system"
+            if (!model.OwnedBy.Contains("openai")
+            && !model.OwnedBy.Contains("system"))
             {
+                // Add the filtered model to the colModels list
                 colModels.Add(model);
             }
         }
@@ -280,8 +406,17 @@
 
     private async Task DeleteModel(Model paramaModel)
     {
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-        var result = await api.ModelsEndpoint.DeleteFineTuneModelAsync(paramaModel.Id);
+        // Create a new OpenAI API client with the provided
+        // API key and organization
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+        // Delete the specified fine-tuned model (paramaModel)
+        // using the OpenAI API
+        var result =
+        await api.ModelsEndpoint.DeleteFineTuneModelAsync(paramaModel.Id);
+
+        // Update the list of models by calling the ListModels method
         await ListModels();
     }
 
@@ -289,20 +424,36 @@
 
     private async Task SubmitCompletion()
     {
+        // Check if a completion model is selected
+        // (CompletionModel is not empty)
         if (CompletionModel != "")
         {
+            // Reset the completion response text
             CompletionResponse = "";
 
-            var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+            // Create a new OpenAI API client with the
+            // provided API key and organization
+            var api =
+            new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-            var objModel = await api.ModelsEndpoint.GetModelDetailsAsync(CompletionModel);
+            // Fetch the details of the selected completion
+            // model (CompletionModel) using the OpenAI API
+            var objModel =
+            await api.ModelsEndpoint.GetModelDetailsAsync(CompletionModel);
 
+            // Define a list of stop sequences for the completion
             List<string> StopSequence = new List<string>() { "->", "." };
 
-            var result = await api.CompletionsEndpoint.CreateCompletionAsync(
+            // Generate a completion using the specified
+            // prompt, model, and other parameters
+            var result =
+            await api.CompletionsEndpoint.CreateCompletionAsync(
                 CompletionPrompt, maxTokens: 100, echo: false,
-                temperature: 0.1, stopSequences: StopSequence, model: objModel);
+                temperature: 0.1, stopSequences: StopSequence,
+                model: objModel);
 
+            // Concatenate the generated completion text to
+            // the CompletionResponse
             foreach (var completion in result.Completions)
             {
                 CompletionResponse += completion.Text;
