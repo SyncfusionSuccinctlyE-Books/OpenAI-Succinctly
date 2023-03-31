@@ -5,18 +5,24 @@
 <PageTitle>Embedding Example</PageTitle>
 
 <h1>Embedding Example</h1>
-<button class="btn btn-primary" @onclick="CreateEmbeddings">Create Embeddings</button>
+<button class="btn btn-primary"
+        @onclick="CreateEmbeddings">
+    Create Embeddings
+</button>
 <br />
 <br />
 @if (embeddingCollection.GetAll().Count > 0)
 {
     <div>
-        <textarea rows="2" cols="25" style="vertical-align:text-top" @bind="prompt"></textarea>
-    <span>&nbsp;</span>
-        <button class="btn btn-success" style="vertical-align:text-top"
+        <textarea rows="2" cols="25"
+                  style="vertical-align:text-top"
+              @bind="prompt"></textarea>
+        <span>&nbsp;</span>
+        <button class="btn btn-success"
+                style="vertical-align:text-top"
             @onclick="CallService">
-        Search
-    </button>
+            Search
+        </button>
     </div>
     <br />
     <ul>
@@ -40,32 +46,78 @@
     // Initialize the component by setting the organization and API key
     protected override void OnInitialized()
     {
-        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
-        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+        Organization =
+        _configuration["OpenAIServiceOptions:Organization"] ?? "";
+
+        ApiKey =
+        _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
     }
 
     // Create embeddings for the given terms using the OpenAI API
     private async Task CreateEmbeddings()
     {
         // Create an instance of the OpenAI client
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var api =
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
         // Get the model details
-        var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+        var model =
+        await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
 
         // Create embeddings for each term
-        var coffee = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("coffee", model);
-        var milk = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("milk", model);
-        var HotWater = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("hot water", model);
-        var chocolate = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chocolate", model);
-        var tea = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("tea", model);
-        var chai = await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chai", model);
+        var coffee =
+        await api.EmbeddingsEndpoint.CreateEmbeddingAsync("coffee", model);
+
+        var milk =
+        await api.EmbeddingsEndpoint.CreateEmbeddingAsync("milk", model);
+
+        var HotWater =
+        await api.EmbeddingsEndpoint.CreateEmbeddingAsync("hot water", model);
+
+        var chocolate =
+        await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chocolate", model);
+
+        var tea =
+        await api.EmbeddingsEndpoint.CreateEmbeddingAsync("tea", model);
+
+        var chai =
+        await api.EmbeddingsEndpoint.CreateEmbeddingAsync("chai", model);
 
         // Add the embeddings to the embedding collection
-        embeddingCollection.Add(new Embedding { Text = "coffee", Values = coffee.Data[0].Embedding.Select(d => (float)d).ToArray() });
-        embeddingCollection.Add(new Embedding { Text = "milk", Values = milk.Data[0].Embedding.Select(d => (float)d).ToArray() });
-        embeddingCollection.Add(new Embedding { Text = "chocolate", Values = chocolate.Data[0].Embedding.Select(d => (float)d).ToArray() });
-        embeddingCollection.Add(new Embedding { Text = "tea", Values = tea.Data[0].Embedding.Select(d => (float)d).ToArray() });
-        embeddingCollection.Add(new Embedding { Text = "chai", Values = chai.Data[0].Embedding.Select(d => (float)d).ToArray() });
+        embeddingCollection.Add(
+            new Embedding
+                {
+                    Text = "coffee",
+                    Values = coffee.Data[0].Embedding.Select(d => (float)d).ToArray()
+                });
+
+        embeddingCollection.Add(
+            new Embedding
+                {
+                    Text = "milk",
+                    Values = milk.Data[0].Embedding.Select(d => (float)d).ToArray()
+                });
+
+        embeddingCollection.Add(
+            new Embedding
+                {
+                    Text = "chocolate",
+                    Values = chocolate.Data[0].Embedding.Select(d => (float)d).ToArray()
+                });
+
+        embeddingCollection.Add(
+            new Embedding
+                {
+                    Text = "tea",
+                    Values = tea.Data[0].Embedding.Select(d => (float)d).ToArray()
+                });
+
+        embeddingCollection.Add(
+            new Embedding
+                {
+                    Text = "chai",
+                    Values = chai.Data[0].Embedding.Select(d => (float)d).ToArray()
+                });
     }
 
     // Call the OpenAI service to calculate similarities between embeddings
@@ -79,19 +131,23 @@
         // Create an instance of the OpenAI client
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
         // Get the model details
-        var model = await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
+        var model =
+        await api.ModelsEndpoint.GetModelDetailsAsync("text-embedding-ada-002");
 
         // Create an embedding for the user's input prompt
-        var EmbeddingQueryResponse = await api.EmbeddingsEndpoint.CreateEmbeddingAsync(prompt, model);
+        var EmbeddingQueryResponse =
+        await api.EmbeddingsEndpoint.CreateEmbeddingAsync(prompt, model);
 
-        // Calculate the similarity between the prompt's embedding and each existing embedding
+        // Calculate the similarity between the prompt's
+        // embedding and each existing embedding
         foreach (var embedding in embeddingsInCollection)
         {
             if (embedding.Values != null)
             {
-                var similarity = 
+                var similarity =
                 CosineSimilarity(
-                    EmbeddingQueryResponse.Data[0].Embedding.Select(d => (float)d).ToArray(), 
+                    EmbeddingQueryResponse.Data[0].Embedding
+                    .Select(d => (float)d).ToArray(),
                     embedding.Values);
 
                 similarities.Add((embedding.Text, similarity));
@@ -130,24 +186,33 @@
 
     private float CosineSimilarity(float[] vector1, float[] vector2)
     {
-        // Initialize variables for dot product and magnitudes of the vectors
+        // Initialize variables for dot product and
+        // magnitudes of the vectors
         float dotProduct = 0;
         float magnitude1 = 0;
         float magnitude2 = 0;
 
-        // Iterate through the vectors and calculate the dot product and magnitudes
+        // Iterate through the vectors and calculate
+        // the dot product and magnitudes
         for (int i = 0; i < vector1?.Length; i++)
         {
-            dotProduct += vector1[i] * vector2[i]; // Calculate dot product
-            magnitude1 += vector1[i] * vector1[i]; // Calculate squared magnitude of vector1
-            magnitude2 += vector2[i] * vector2[i]; // Calculate squared magnitude of vector2
+            // Calculate dot product
+            dotProduct += vector1[i] * vector2[i];
+
+            // Calculate squared magnitude of vector1
+            magnitude1 += vector1[i] * vector1[i];
+
+            // Calculate squared magnitude of vector2
+            magnitude2 += vector2[i] * vector2[i];
         }
 
-        // Take the square root of the squared magnitudes to obtain actual magnitudes
+        // Take the square root of the squared magnitudes
+        // to obtain actual magnitudes
         magnitude1 = (float)Math.Sqrt(magnitude1);
         magnitude2 = (float)Math.Sqrt(magnitude2);
 
-        // Calculate and return cosine similarity by dividing dot product by the product of magnitudes
+        // Calculate and return cosine similarity by dividing
+        // dot product by the product of magnitudes
         return dotProduct / (magnitude1 * magnitude2);
     }
 }
