@@ -66,15 +66,6 @@
         </tbody>
     </table>
 }
-@if (colEvents.Count > 0)
-{
-    <h4>Fine Tune Events</h4>
-    <br />
-    @foreach (var status in colEvents)
-    {
-        <p>[@status.CreatedAt](@status.Level) : @status.Message</p>
-    }
-}
 
 <!-- FineTuneJobs -->
 @if (colFineTuneJob.Any())
@@ -96,7 +87,6 @@
     </div>
     <br />
 }
-
 
 <!-- Models -->
 @if (colModels.Count > 0)
@@ -179,7 +169,6 @@
     FineTuneJob? fineTuneJob;
 
     // Declare collections for events, fine-tuning jobs, and models
-    List<Event> colEvents = new List<Event>();
     List<FineTuneJob> colFineTuneJob = new List<FineTuneJob>();
     List<Model> colModels = new List<Model>();
 
@@ -306,40 +295,13 @@
         // and store the result in the fineTuneJob variable
         fineTuneJob =
         await api.FineTuningEndpoint.CreateFineTuneJobAsync(request);
-
-        // Call the FineTuneEvents method to list events
-        // related to the created fine-tuning job
-        await FineTuneEvents();
-    }
-
-    private async Task FineTuneEvents()
-    {
-        // Check if a fine-tuning job exists
-        if (fineTuneJob != null)
-        {
-            // Initialize a new list of events for the fine-tuning job
-            colEvents = new List<Event>();
-
-            // Create a new OpenAI API client with the
-            // provided API key and organization
-            var api =
-            new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-
-            // Fetch the events associated with the
-            // fine-tuning job using the OpenAI API
-            var Events =
-            await api.FineTuningEndpoint.ListFineTuneEventsAsync(fineTuneJob);
-
-            // Add each fetched event to the colEvents list
-            foreach (var item in Events)
-            {
-                colEvents.Add(item);
-            }
-        }
     }
 
     private async Task ListFineTuneJobs()
     {
+        // Clear collection
+        colFineTuneJob = new List<FineTuneJob>();
+
         // Create a new OpenAI API client with the provided
         // API key and organization
         var api =
