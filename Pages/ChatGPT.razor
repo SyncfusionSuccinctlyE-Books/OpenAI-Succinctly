@@ -25,12 +25,12 @@
         margin-bottom: 20px;
     }
 
-    .assistant:after, .user:after {
-        content: '';
-        border: 20px solid transparent;
-        position: absolute;
-        margin-top: -30px;
-    }
+        .assistant:after, .user:after {
+            content: '';
+            border: 20px solid transparent;
+            position: absolute;
+            margin-top: -30px;
+        }
 
     .user {
         background: #03a9f4;
@@ -70,17 +70,18 @@
     @foreach (var item in messages)
     {
         <div>
-            @if (item.Role == "user")
+            @if (item.Role == Role.User)
             {
                 <div style="float: right; margin-right: 20px; margin-top: 10px">
                     <b>Human</b>
                 </div>
-                <div class="@item.Role">
+                <div class="@item.Role.ToString().ToLower()">
                     <div class="msg">
                         @item.Prompt
                         <br /><br />
                         <div style="font-size:xx-small;">
-                            <i><b>(@item.Tokens)</b> Tokens</i></div>
+                            <i><b>(@item.Tokens)</b> Tokens</i>
+                        </div>
                     </div>
                 </div>
             }
@@ -89,7 +90,7 @@
                 <div style="float: left; margin-left: 20px; margin-top: 10px">
                     <b>ChatGPT&nbsp;&nbsp;</b>
                 </div>
-                <div class="@item.Role">
+                <div class="@item.Role.ToString().ToLower()">
                     <div class="msg">
                         @if (item.Prompt != null)
                         {
@@ -97,7 +98,8 @@
                         }
                         <br /><br />
                         <div style="font-size:xx-small;">
-                            <i><b>(@item.Tokens)</b> Tokens</i></div>
+                            <i><b>(@item.Tokens)</b> Tokens</i>
+                        </div>
                     </div>
                 </div>
             }
@@ -108,11 +110,15 @@
 {
     <textarea rows="3" cols="60" @bind="prompt" />
     <br />
-    <button class="btn btn-primary" 
-    @onclick="CallChatGPT">Call ChatGPT</button>
+    <button class="btn btn-primary"
+        @onclick="CallChatGPT">
+        Call ChatGPT
+    </button>
     <span>&nbsp;</span>
-    <button class="btn btn-info" 
-    @onclick="RestartChatGPT">Restart</button>
+    <button class="btn btn-info"
+        @onclick="RestartChatGPT">
+        Restart
+    </button>
 }
 else
 {
@@ -124,7 +130,7 @@ else
     string Organization = "";
     string ApiKey = "";
 
-    List<Message> messages = new List<Message>();
+    List<MessageSave> messages = new List<MessageSave>();
     string prompt = "Write a 10 word description of OpenAI ChatGPT";
     string ErrorMessage = "";
     bool Processing = false;
@@ -142,16 +148,16 @@ else
         // Use a try-catch block to handle any exceptions that might occur
         try
         {
-            // Call the JavaScript function "ScrollToBottom" 
+            // Call the JavaScript function "ScrollToBottom"
             // with the argument "chatcontainer"
-            // This function is responsible for scrolling the chat 
+            // This function is responsible for scrolling the chat
             // container to the bottom
             await _jsRuntime.InvokeAsync<string>(
                 "ScrollToBottom", "chatcontainer");
         }
         catch
         {
-            // If any exception occurs while calling the 
+            // If any exception occurs while calling the
             // JavaScript function,do nothing and ignore the error
         }
     }
@@ -175,39 +181,40 @@ else
 
             // Create a new list of ChatPrompt objects and initialize it with the
             // system's introductory message
-            var chatPrompts = new List<ChatPrompt>();
-            chatPrompts.Add(new ChatPrompt("system", "You are helpful Assistant"));
+            var chatMessages = new List<Message>();
 
-            // Add all existing messages to chatPrompts
+            chatMessages.Add(new Message(Role.System, "You are helpful Assistant"));
+
+            // Add all existing messages to chatMessages
             foreach (var item in messages)
             {
-                chatPrompts.Add(new ChatPrompt(item.Role, item.Prompt));
+                chatMessages.Add(new Message(item.Role, item.Prompt));
             }
 
-            // Add the new message to chatPrompts
-            chatPrompts.Add(new ChatPrompt("user", prompt));
+            // Add the new message to chatMessages
+            chatMessages.Add(new Message(Role.User, prompt));
 
             // Call ChatGPT
             // Create a new ChatRequest object with the chat prompts and pass
             // it to the API's GetCompletionAsync method
-            var chatRequest = new ChatRequest(chatPrompts);
+            var chatRequest = new ChatRequest(chatMessages);
             var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
             // Create a new Message object with the user's prompt and other
             // details and add it to the messages list
-            messages.Add(new Message
+            messages.Add(new MessageSave
                 {
                     Prompt = prompt,
-                    Role = "user",
+                    Role = Role.User,
                     Tokens = result.Usage.PromptTokens
                 });
 
             // Create a new Message object with the response and other details
             // and add it to the messages list
-            messages.Add(new Message
+            messages.Add(new MessageSave
                 {
                     Prompt = result.FirstChoice.Message,
-                    Role = "assistant",
+                    Role = Role.Assistant,
                     Tokens = result.Usage.CompletionTokens
                 });
 
@@ -236,16 +243,16 @@ else
     void RestartChatGPT()
     {
         prompt = "Write a 10 word description of OpenAI ChatGPT";
-        messages = new List<Message>();
+        messages = new List<MessageSave>();
         TotalTokens = 0;
         ErrorMessage = "";
         StateHasChanged();
     }
 
-    public class Message
+    public class MessageSave
     {
         public string? Prompt { get; set; }
-        public string? Role { get; set; }
+        public Role Role { get; set; }
         public int Tokens { get; set; }
     }
 }
