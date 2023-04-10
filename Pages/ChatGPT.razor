@@ -179,7 +179,7 @@ else
             // with the provided API key and organization
             var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-            // Create a new list of ChatPrompt objects and initialize it with the
+            // Create a new list of chatMessages objects and initialize it with the
             // system's introductory message
             var chatMessages = new List<Message>();
 
@@ -200,7 +200,7 @@ else
             var chatRequest = new ChatRequest(chatMessages);
             var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
-            // Create a new Message object with the user's prompt and other
+            // Create a new MessageSave object with the user's prompt and other
             // details and add it to the messages list
             messages.Add(new MessageSave
                 {
@@ -209,7 +209,7 @@ else
                     Tokens = result.Usage.PromptTokens
                 });
 
-            // Create a new Message object with the response and other details
+            // Create a new MessageSave object with the response and other details
             // and add it to the messages list
             messages.Add(new MessageSave
                 {
