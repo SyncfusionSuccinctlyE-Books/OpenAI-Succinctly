@@ -65,9 +65,9 @@
     }
 </style>
 <h1>ChatGPT</h1>
-<p style="font-size:small"><b>Total Tokens:</b> @TotalTokens</p>
+
 <div id="chatcontainer" style="height:550px; width:80%; overflow: scroll;">
-    @foreach (var item in messages)
+    @foreach (var item in chatMessages)
     {
         <div>
             @if (item.Role == Role.User)
@@ -77,29 +77,22 @@
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
                     <div class="msg">
-                        @item.Prompt
-                        <br /><br />
-                        <div style="font-size:xx-small;">
-                            <i><b>(@item.Tokens)</b> Tokens</i>
-                        </div>
+                        @item.Content
                     </div>
                 </div>
             }
-            else
+
+            @if (item.Role == Role.Assistant)
             {
                 <div style="float: left; margin-left: 20px; margin-top: 10px">
                     <b>ChatGPT&nbsp;&nbsp;</b>
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
                     <div class="msg">
-                        @if (item.Prompt != null)
+                        @if (item.Content != null)
                         {
-                            @((MarkupString)item.Prompt)
+                            @((MarkupString)item.Content)
                         }
-                        <br /><br />
-                        <div style="font-size:xx-small;">
-                            <i><b>(@item.Tokens)</b> Tokens</i>
-                        </div>
                     </div>
                 </div>
             }
@@ -111,12 +104,12 @@
     <textarea rows="3" cols="60" @bind="prompt" />
     <br />
     <button class="btn btn-primary"
-        @onclick="CallChatGPT">
+    @onclick="CallChatGPT">
         Call ChatGPT
     </button>
     <span>&nbsp;</span>
     <button class="btn btn-info"
-        @onclick="RestartChatGPT">
+    @onclick="RestartChatGPT">
         Restart
     </button>
 }
@@ -130,16 +123,21 @@ else
     string Organization = "";
     string ApiKey = "";
 
-    List<MessageSave> messages = new List<MessageSave>();
+    List<Message> chatMessages = new List<Message>();
     string prompt = "Write a 10 word description of OpenAI ChatGPT";
     string ErrorMessage = "";
     bool Processing = false;
-    int TotalTokens = 0;
 
     protected override void OnInitialized()
     {
         Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
         ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+
+        // Create a new list of chatMessages objects
+        chatMessages = new List<Message>();
+
+        // Add the system's introductory message to the chatMessages list
+        chatMessages.Add(new Message(Role.System, "You are helpful Assistant"));
     }
 
     // This method is called after the component has finished rendering
@@ -179,18 +177,6 @@ else
             // with the provided API key and organization
             var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-            // Create a new list of chatMessages objects and initialize it with the
-            // system's introductory message
-            var chatMessages = new List<Message>();
-
-            chatMessages.Add(new Message(Role.System, "You are helpful Assistant"));
-
-            // Add all existing messages to chatMessages
-            foreach (var item in messages)
-            {
-                chatMessages.Add(new Message(item.Role, item.Prompt));
-            }
-
             // Add the new message to chatMessages
             chatMessages.Add(new Message(Role.User, prompt));
 
@@ -200,26 +186,14 @@ else
             var chatRequest = new ChatRequest(chatMessages);
             var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
-            // Create a new MessageSave object with the user's prompt and other
-            // details and add it to the messages list
-            messages.Add(new MessageSave
+            var choice = result.Choices.FirstOrDefault();
+            if (choice != null)
+            {
+                if (choice.Message != null)
                 {
-                    Prompt = prompt,
-                    Role = Role.User,
-                    Tokens = result.Usage.PromptTokens
-                });
-
-            // Create a new MessageSave object with the response and other details
-            // and add it to the messages list
-            messages.Add(new MessageSave
-                {
-                    Prompt = result.FirstChoice.Message,
-                    Role = Role.Assistant,
-                    Tokens = result.Usage.CompletionTokens
-                });
-
-            // Update the total number of tokens used by the API
-            TotalTokens = TotalTokens + result.Usage.TotalTokens;
+                    chatMessages.Add(choice.Message);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -243,16 +217,8 @@ else
     void RestartChatGPT()
     {
         prompt = "Write a 10 word description of OpenAI ChatGPT";
-        messages = new List<MessageSave>();
-        TotalTokens = 0;
+        chatMessages = new List<Message>();
         ErrorMessage = "";
         StateHasChanged();
-    }
-
-    public class MessageSave
-    {
-        public string? Prompt { get; set; }
-        public Role Role { get; set; }
-        public int Tokens { get; set; }
     }
 }
