@@ -1,0 +1,470 @@
+﻿@page "/functions"
+@using OpenAI;
+@using OpenAI.Chat;
+@using OpenAI.Models;
+@using System.Text.Json.Nodes;
+@using System.Text.Json.Serialization;
+@using System.Text.Json;
+@inject IConfiguration _configuration
+@inject IJSRuntime _jsRuntime
+<PageTitle>Chat GPT</PageTitle>
+<style>
+    textarea {
+        border: 1px dashed #888;
+        border-radius: 5px;
+        width: 80%;
+        overflow: auto;
+        background: #f7f7f7
+    }
+
+    /* improved CSS for speech bubbles */
+
+    .assistant, .user {
+        position: relative;
+        font-family: arial;
+        font-size: 1.1em;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+        .assistant:after, .user:after {
+            content: '';
+            border: 20px solid transparent;
+            position: absolute;
+            margin-top: -30px;
+        }
+
+    .user {
+        background: #03a9f4;
+        color: #fff;
+        margin-left: 20%;
+        margin-right: 100px;
+        top: 30%;
+        text-align: right;
+    }
+
+    .assistant {
+        background: #4CAF50;
+        color: #fff;
+        margin-left: 100px;
+        margin-right: 20%;
+    }
+
+    .user:after {
+        border-left-color: #03a9f4;
+        border-right: 0;
+        right: -20px;
+    }
+
+    .assistant:after {
+        border-right-color: #4CAF50;
+        border-left: 0;
+        left: -20px;
+    }
+
+    .msg {
+        font-size: medium;
+    }
+</style>
+<h1>ChatGPT</h1>
+
+<div id="chatcontainer" style="height:550px; width:80%; overflow: scroll;">
+    @foreach (var item in chatMessages)
+    {
+        <div>
+            @if (item.Role == Role.User)
+            {
+                <div style="float: right; margin-right: 20px; margin-top: 10px">
+                    <b>Human</b>
+                </div>
+                <div class="@item.Role.ToString().ToLower()">
+                    <div class="msg">
+                        @item.Content
+                    </div>
+                </div>
+            }
+
+            @if (item.Role == Role.Assistant)
+            {
+                <div style="float: left; margin-left: 20px; margin-top: 10px">
+                    <b>ChatGPT&nbsp;&nbsp;</b>
+                </div>
+                <div class="@item.Role.ToString().ToLower()">
+                    <div class="msg">
+                        @if (item.Content != null)
+                        {
+                            @((MarkupString)item.Content)
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+@if (!Processing)
+{
+    <textarea rows="3" cols="60" @bind="prompt" />
+    <br />
+    <button class="btn btn-primary"
+    @onclick="CallChatGPT">
+        Call ChatGPT
+    </button>
+    <span>&nbsp;</span>
+    <button class="btn btn-info"
+    @onclick="RestartChatGPT">
+        Restart
+    </button>
+}
+else
+{
+    <br>
+    <h4>Processing...</h4>
+}
+<br /><p style="color:red">@ErrorMessage</p>
+@code {
+    string Organization = "";
+    string ApiKey = "";
+
+    List<Message> chatMessages = new List<Message>();
+    string prompt = "Write a 10 word description of OpenAI ChatGPT";
+    string ErrorMessage = "";
+    bool Processing = false;
+
+    protected override void OnInitialized()
+    {
+        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
+        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+
+        // Create a new list of chatMessages objects
+        chatMessages = new List<Message>();
+
+        // Add the system's introductory message to the chatMessages list
+        chatMessages.Add(new Message(Role.System, "You are helpful Assistant"));
+    }
+
+    // This method is called after the component has finished rendering
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Use a try-catch block to handle any exceptions that might occur
+        try
+        {
+            // Call the JavaScript function "ScrollToBottom"
+            // with the argument "chatcontainer"
+            // This function is responsible for scrolling the chat
+            // container to the bottom
+            await _jsRuntime.InvokeAsync<string>(
+                "ScrollToBottom", "chatcontainer");
+        }
+        catch
+        {
+            // If any exception occurs while calling the
+            // JavaScript function,do nothing and ignore the error
+        }
+    }
+
+    async Task CallChatGPT()
+    {
+        try
+        {
+            // Set Processing to true to indicate that the method is processing
+            Processing = true;
+
+            // Call StateHasChanged to refresh the UI
+            StateHasChanged();
+
+            // Clear any previous error messages
+            ErrorMessage = "";
+
+            // Create a new OpenAIClient object
+            // with the provided API key and organization
+            var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+            // Add the new message to chatMessages
+            chatMessages.Add(new Message(Role.User, prompt));
+
+            // *** FUNCTIONS ***
+            var DefinedFunctions = new List<Function>
+            {
+                new Function(
+                    "Todos_POST",
+                    @"Creates a new TODO item.
+                        Use this function to add a new TODO item to the list.".Trim(),
+                    new JsonObject
+                    {
+                        ["type"] = "object",
+                        ["properties"] = new JsonObject
+                        {
+                            ["TodoRequest"] = new JsonObject
+                            {
+                                ["type"] = "object",
+                                ["properties"] = new JsonObject
+                                {
+                                    ["todo"] = new JsonObject
+                                    {
+                                        ["type"] = "string",
+                                        ["description"] = @"The TODO item to be added."
+                                    }
+                                },
+                                ["required"] = new JsonArray { "todo" }
+                            }
+                        },
+                        ["required"] = new JsonArray { "TodoRequest" }
+                    }),
+                new Function(
+                    "Todos_GET",
+                    @"Retrieves the TODO list.
+                        Use this function to view the TODO list.".Trim(),
+                    new JsonObject
+                    {
+                        ["type"] = "object",
+                        ["properties"] = new JsonObject {}
+                    }),
+                new Function(
+                    "Todos_DELETE",
+                    @"Deletes a specific TODO item from the list.
+                        Use this function to remove a TODO item from the list.".Trim(),
+                    new JsonObject
+                    {
+                        ["type"] = "object",
+                        ["properties"] = new JsonObject
+                        {
+                            ["TodoIndexRequest"] = new JsonObject
+                            {
+                                ["type"] = "object",
+                                ["properties"] = new JsonObject
+                                {
+                                    ["todoIdx"] = new JsonObject
+                                    {
+                                        ["type"] = "integer",
+                                        ["description"] = @"The index of the TODO item to be deleted."
+                                    }
+                                },
+                                ["required"] = new JsonArray { "todoIdx" }
+                            }
+                        },
+                        ["required"] = new JsonArray { "TodoIndexRequest" }
+                    })
+            };
+
+            // Call ChatGPT
+            // Create a new ChatRequest object with the chat prompts and pass
+            // it to the API's GetCompletionAsync method
+
+            // *** FUNCTIONS ***
+            var chatRequest = new ChatRequest(
+                chatMessages,
+                functions: DefinedFunctions,
+                functionCall: "auto",
+                model: "gpt-3.5-turbo-0613", // Must use this model or higher
+                temperature: 0.0,
+                topP: 1,
+                frequencyPenalty: 0,
+                presencePenalty: 0);
+
+            var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
+
+            // *** FUNCTIONS ***
+            // See if as a response ChatGPT wants to call a function
+            if (result.FirstChoice.FinishReason == "function_call")
+            {
+                // Chat GPT wants to call a function
+                // To allow ChatGPT to call multiple functions
+                // We need to start a While loop
+                bool FunctionCallingComplete = false;
+
+                while (!FunctionCallingComplete)
+                {
+                    // Call the function
+                    chatMessages = ExecuteFunction(result, chatMessages);
+
+                    // Get a response from ChatGPT (now that is has the results of the function)
+                    chatRequest = new ChatRequest(
+                        chatMessages,
+                        functions: DefinedFunctions,
+                        functionCall: "auto",
+                        model: "gpt-3.5-turbo-0613", // Must use this model or higher
+                        temperature: 0.0,
+                        topP: 1,
+                        frequencyPenalty: 0,
+                        presencePenalty: 0);
+
+                    result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
+
+                    var FunctionResult = result.Choices.FirstOrDefault();
+
+                    if (FunctionResult != null)
+                    {
+                        if (result.FirstChoice.Message != null)
+                        {
+                            if (FunctionResult.FinishReason == "function_call")
+                            {
+                                // Keep looping
+                                FunctionCallingComplete = false;
+                            }
+                            else
+                            {
+                                // Break out of the loop
+                                FunctionCallingComplete = true;
+                            }
+                        }
+                        else
+                        {
+                            // Break out of the loop
+                            FunctionCallingComplete = true;
+                        }
+                    }
+                    else
+                    {
+                        // Break out of the loop
+                        FunctionCallingComplete = true;
+                    }
+                }
+            }
+
+            // Add the response to chatMessages
+            var choice = result.Choices.FirstOrDefault();
+
+            if (choice != null)
+            {
+                if (choice.Message != null)
+                {
+                    chatMessages.Add(choice.Message);
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+            // Set ErrorMessage to the exception message if an error occurs
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            // Clear the prompt variable
+            prompt = "";
+
+            // Set Processing to false to indicate
+            // that the method is done processing
+            Processing = false;
+
+            // Call StateHasChanged to refresh the UI
+            StateHasChanged();
+        }
+    }
+
+    void RestartChatGPT()
+    {
+        prompt = "Write a 10 word description of OpenAI ChatGPT";
+        chatMessages = new List<Message>();
+        ErrorMessage = "";
+        StateHasChanged();
+    }
+
+    // *** FUNCTIONS ***
+
+    private List<Message> ExecuteFunction(
+    ChatResponse ChatResponseResult, List<Message> ParamChatPrompts)
+    {
+        // Get the arguments
+        var functionArgs =
+        ChatResponseResult.FirstChoice.Message.Function.Arguments.ToString();
+
+        // Get the function name
+        var functionName = ChatResponseResult.FirstChoice.Message.Function.Name;
+
+        // Variable to hold the function result
+        string functionResult = "";
+
+        // Use select case to call the function
+        switch (functionName)
+        {
+            case "Todos_POST":
+                var NewTODO =
+                JsonSerializer.Deserialize<ToDoAddRequest>(functionArgs);
+                if (NewTODO != null)
+                {
+                    functionResult = AddTodo(NewTODO.TodoRequest.todo);
+                }
+                break;
+            case "Todos_GET":
+                functionResult = GetTodos();
+                break;
+            case "Todos_DELETE":
+                var DeleteTODO =
+                JsonSerializer.Deserialize<ToDoRemoveRequest>(functionArgs);
+                if (DeleteTODO != null)
+                {
+                    functionResult =
+                    DeleteTodo(DeleteTODO.TodoIndexRequest.todoIdx);
+                }
+                break;
+            default:
+                break;
+        }
+
+        // Call ChatGPT again with the results of the function
+        ParamChatPrompts.Add(
+            new Message(Role.Function, functionResult, functionName)
+        );
+
+        return ParamChatPrompts;
+    }
+
+    class WeatherService
+    {
+        public static string GetCurrentWeather(WeatherArgs weatherArgs)
+        {
+            return $"The current weather in {weatherArgs.Location} is 20 {weatherArgs.Unit}";
+        }
+    }
+
+    class WeatherArgs
+    {
+        [JsonPropertyName("location")]
+        public string? Location { get; set; }
+
+        [JsonPropertyName("unit")]
+        public string? Unit { get; set; }
+    }
+
+    private static readonly List<string> _TODOS = new List<string>();
+    public string AddTodo(string NewToDO)
+    {
+        _TODOS.Add(NewToDO);
+        return $"{NewToDO} added";
+    }
+    public string GetTodos()
+    {
+        return JsonSerializer.Serialize<List<string>>(_TODOS);
+    }
+    public string DeleteTodo(int TodoIdxInt)
+    {
+        if (TodoIdxInt >= 0 && TodoIdxInt < _TODOS.Count)
+        {
+            _TODOS.RemoveAt(TodoIdxInt);
+            return $"TODO {TodoIdxInt} deleted";
+        }
+        else
+        {
+            return "TODO not found";
+        }
+    }
+
+    public class ToDoAddRequest
+    {
+        public Todorequest TodoRequest { get; set; }
+    }
+    public class Todorequest
+    {
+        public string todo { get; set; }
+    }
+    public class ToDoRemoveRequest
+    {
+        public Todoindexrequest TodoIndexRequest { get; set; }
+    }
+    public class Todoindexrequest
+    {
+        public int todoIdx { get; set; }
+    }
+}
