@@ -123,6 +123,7 @@ else
 }
 <br /><p style="color:red">@ErrorMessage</p>
 @code {
+#nullable disable
     string Organization = "";
     string ApiKey = "";
 
@@ -278,7 +279,8 @@ else
                     // Call the function
                     chatMessages = ExecuteFunction(result, chatMessages);
 
-                    // Get a response from ChatGPT (now that is has the results of the function)
+                    // Get a response from ChatGPT
+                    // (now that is has the results of the function)
                     chatRequest = new ChatRequest(
                         chatMessages,
                         functions: DefinedFunctions,
@@ -293,26 +295,10 @@ else
 
                     var FunctionResult = result.Choices.FirstOrDefault();
 
-                    if (FunctionResult != null)
+                    if (FunctionResult.FinishReason == "function_call")
                     {
-                        if (result.FirstChoice.Message != null)
-                        {
-                            if (FunctionResult.FinishReason == "function_call")
-                            {
-                                // Keep looping
-                                FunctionCallingComplete = false;
-                            }
-                            else
-                            {
-                                // Break out of the loop
-                                FunctionCallingComplete = true;
-                            }
-                        }
-                        else
-                        {
-                            // Break out of the loop
-                            FunctionCallingComplete = true;
-                        }
+                        // Keep looping
+                        FunctionCallingComplete = false;
                     }
                     else
                     {
@@ -325,18 +311,15 @@ else
             // Add the response to chatMessages
             var choice = result.Choices.FirstOrDefault();
 
-            if (choice != null)
+            if (choice.Message != null)
             {
-                if (choice.Message != null)
-                {
-                    chatMessages.Add(choice.Message);
-                }
+                chatMessages.Add(choice.Message);
             }
-
         }
         catch (Exception ex)
         {
-            // Set ErrorMessage to the exception message if an error occurs
+            // Set ErrorMessage to the exception
+            // message if an error occurs
             ErrorMessage = ex.Message;
         }
         finally
@@ -355,7 +338,9 @@ else
 
     void RestartChatGPT()
     {
-        prompt = "Write a 10 word description of OpenAI ChatGPT";
+        prompt =
+        "Write a 10 word description of OpenAI ChatGPT";
+
         chatMessages = new List<Message>();
         ErrorMessage = "";
         StateHasChanged();
@@ -371,7 +356,8 @@ else
         ChatResponseResult.FirstChoice.Message.Function.Arguments.ToString();
 
         // Get the function name
-        var functionName = ChatResponseResult.FirstChoice.Message.Function.Name;
+        var functionName =
+        ChatResponseResult.FirstChoice.Message.Function.Name;
 
         // Variable to hold the function result
         string functionResult = "";
