@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using OpenAI;
+@using OpenAI.Chat
 @using OpenAI.Models;
 @inject IConfiguration _configuration
 <PageTitle>Index</PageTitle>
@@ -44,20 +45,18 @@
         var api =
         new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-        // Call the CompletionsEndpoint.CreateCompletionAsync
-        // method with the given parameters
-        // * maxTokens is set to 100, which limits the response
-        // to a maximum of 100 tokens.
-        // * temperature is set to 0.1, which controls the randomness
-        // Lower values produce more deterministic outputs.
-        var result = await api.CompletionsEndpoint.CreateCompletionAsync(
-            prompt, maxTokens: 100, temperature: 0.1, model: Model.Davinci);
-
-        // Iterate over the completions and
-        // append them to the response string
-        foreach (var completion in result.Completions)
+        var messages = new List<Message>
         {
-            response += completion.Text;
-        }
+            new Message(Role.System, "You are a helpful assistant."),
+            new Message(Role.User, prompt),
+        };
+
+        // Create a new instance of the ChatRequest class, passing in the
+        // messages list, and other parameters
+
+        var chatRequest = new ChatRequest(messages, maxTokens: 100, temperature: 0.1, model: Model.GPT4);
+        var ChatResponse = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
+
+        response = ChatResponse.FirstChoice.Message;
     }
 }

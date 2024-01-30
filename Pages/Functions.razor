@@ -1,4 +1,4 @@
-﻿@page "/functions"
+﻿@page "/Tools"
 @using OpenAI;
 @using OpenAI.Chat;
 @using OpenAI.Models;
@@ -150,9 +150,9 @@ else
         // Use a try-catch block to handle any exceptions that might occur
         try
         {
-            // Call the JavaScript function "ScrollToBottom"
+            // Call the JavaScript Tool "ScrollToBottom"
             // with the argument "chatcontainer"
-            // This function is responsible for scrolling the chat
+            // This Tool is responsible for scrolling the chat
             // container to the bottom
             await _jsRuntime.InvokeAsync<string>(
                 "ScrollToBottom", "chatcontainer");
@@ -160,7 +160,7 @@ else
         catch
         {
             // If any exception occurs while calling the
-            // JavaScript function,do nothing and ignore the error
+            // JavaScript Tool,do nothing and ignore the error
         }
     }
 
@@ -184,13 +184,13 @@ else
             // Add the new message to chatMessages
             chatMessages.Add(new Message(Role.User, prompt));
 
-            // *** FUNCTIONS ***
-            var DefinedFunctions = new List<Function>
+            // *** ToolS ***
+            var DefinedTools = new List<Tool>
             {
                 new Function(
                     "Todos_POST",
                     @"Creates a new TODO item.
-                        Use this function to add a new TODO item to the list.".Trim(),
+                        Use this Tool to add a new TODO item to the list.".Trim(),
                     new JsonObject
                     {
                         ["type"] = "object",
@@ -215,7 +215,7 @@ else
                 new Function(
                     "Todos_GET",
                     @"Retrieves the TODO list.
-                        Use this function to view the TODO list.".Trim(),
+                        Use this Tool to view the TODO list.".Trim(),
                     new JsonObject
                     {
                         ["type"] = "object",
@@ -224,7 +224,7 @@ else
                 new Function(
                     "Todos_DELETE",
                     @"Deletes a specific TODO item from the list.
-                        Use this function to remove a TODO item from the list.".Trim(),
+                        Use this Tool to remove a TODO item from the list.".Trim(),
                     new JsonObject
                     {
                         ["type"] = "object",
@@ -252,11 +252,11 @@ else
             // Create a new ChatRequest object with the chat prompts and pass
             // it to the API's GetCompletionAsync method
 
-            // *** FUNCTIONS ***
+            // *** ToolS ***
             var chatRequest = new ChatRequest(
                 chatMessages,
-                functions: DefinedFunctions,
-                functionCall: "auto",
+                tools: DefinedTools,
+                toolChoice: "auto",
                 model: "gpt-3.5-turbo-0613", // Must use this model or higher
                 temperature: 0.0,
                 topP: 1,
@@ -265,26 +265,26 @@ else
 
             var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
-            // *** FUNCTIONS ***
-            // See if as a response ChatGPT wants to call a function
-            if (result.FirstChoice.FinishReason == "function_call")
+            // *** ToolS ***
+            // See if as a response ChatGPT wants to call a Tool
+            if (result.FirstChoice.FinishReason == "Tool_call")
             {
-                // Chat GPT wants to call a function
-                // To allow ChatGPT to call multiple functions
+                // Chat GPT wants to call a Tool
+                // To allow ChatGPT to call multiple Tools
                 // We need to start a While loop
-                bool FunctionCallingComplete = false;
+                bool ToolCallingComplete = false;
 
-                while (!FunctionCallingComplete)
+                while (!ToolCallingComplete)
                 {
-                    // Call the function
-                    chatMessages = ExecuteFunction(result, chatMessages);
+                    // Call the Tool
+                    chatMessages = ExecuteTool(result, chatMessages);
 
                     // Get a response from ChatGPT
-                    // (now that is has the results of the function)
+                    // (now that is has the results of the Tool)
                     chatRequest = new ChatRequest(
                         chatMessages,
-                        functions: DefinedFunctions,
-                        functionCall: "auto",
+                        tools: DefinedTools,
+                        toolChoice: "auto",
                         model: "gpt-3.5-turbo-0613", // Must use this model or higher
                         temperature: 0.0,
                         topP: 1,
@@ -293,17 +293,17 @@ else
 
                     result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
-                    var FunctionResult = result.Choices.FirstOrDefault();
+                    var ToolResult = result.Choices.FirstOrDefault();
 
-                    if (FunctionResult.FinishReason == "function_call")
+                    if (ToolResult.FinishReason == "Tool_call")
                     {
                         // Keep looping
-                        FunctionCallingComplete = false;
+                        ToolCallingComplete = false;
                     }
                     else
                     {
                         // Break out of the loop
-                        FunctionCallingComplete = true;
+                        ToolCallingComplete = true;
                     }
                 }
             }
@@ -346,42 +346,42 @@ else
         StateHasChanged();
     }
 
-    // *** FUNCTIONS ***
+    // *** ToolS ***
 
-    private List<Message> ExecuteFunction(
+    private List<Message> ExecuteTool(
     ChatResponse ChatResponseResult, List<Message> ParamChatPrompts)
     {
         // Get the arguments
-        var functionArgs =
-        ChatResponseResult.FirstChoice.Message.Function.Arguments.ToString();
+        var ToolArgs =
+        ChatResponseResult.FirstChoice.Message.ToolCalls.FirstOrDefault().Function.Arguments.ToString();
 
-        // Get the function name
-        var functionName =
-        ChatResponseResult.FirstChoice.Message.Function.Name;
+        // Get the Tool name
+        var ToolName =
+        ChatResponseResult.FirstChoice.Message.ToolCallId;
 
-        // Variable to hold the function result
-        string functionResult = "";
+        // Variable to hold the Tool result
+        string ToolResult = "";
 
-        // Use select case to call the function
-        switch (functionName)
+        // Use select case to call the Tool
+        switch (ToolName)
         {
             case "Todos_POST":
                 var NewTODO =
-                JsonSerializer.Deserialize<ToDoAddRequest>(functionArgs);
+                JsonSerializer.Deserialize<ToDoAddRequest>(ToolArgs);
                 if (NewTODO != null)
                 {
-                    functionResult = AddTodo(NewTODO.TodoRequest.todo);
+                    ToolResult = AddTodo(NewTODO.TodoRequest.todo);
                 }
                 break;
             case "Todos_GET":
-                functionResult = GetTodos();
+                ToolResult = GetTodos();
                 break;
             case "Todos_DELETE":
                 var DeleteTODO =
-                JsonSerializer.Deserialize<ToDoRemoveRequest>(functionArgs);
+                JsonSerializer.Deserialize<ToDoRemoveRequest>(ToolArgs);
                 if (DeleteTODO != null)
                 {
-                    functionResult =
+                    ToolResult =
                     DeleteTodo(DeleteTODO.TodoIndexRequest.todoIdx);
                 }
                 break;
@@ -389,9 +389,9 @@ else
                 break;
         }
 
-        // Call ChatGPT again with the results of the function
+        // Call ChatGPT again with the results of the Tool
         ParamChatPrompts.Add(
-            new Message(Role.Function, functionResult, functionName)
+            new Message(Role.Tool, ToolResult, ToolName)
         );
 
         return ParamChatPrompts;

@@ -51,10 +51,9 @@
         // The method is called asynchronously and the results are stored in the 
         // 'results' variable. The method is called with two arguments, 
         // 'prompt' and '2', specifying the text prompt and the number of images 
-        // to generate, respectively. The 'ImageSize.Small' argument specifies that
-        // the generated images should be small in size.
-        var results = 
-        await api.ImagesEndPoint.GenerateImageAsync(prompt, 2, ImageSize.Small);
+        // to generate, respectively. 
+        var request = new ImageGenerationRequest(prompt, Model.DallE_3, 2);
+        var results = await api.ImagesEndPoint.GenerateImageAsync(request);
 
         if (results.Count > 0) 
         {

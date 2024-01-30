@@ -1,5 +1,6 @@
 ﻿@page "/finetuningexample"
 @using OpenAI;
+@using OpenAI.Chat
 @using OpenAI.Files;
 @using OpenAI.FineTuning;
 @using OpenAI.Models;
@@ -43,7 +44,7 @@
                         <a href="javascript:void(0)"
                            onclick="@(() => DownloadFile(file))">
                             @file.FileName
-                        </a> (@file.Status - @file.Size bytes) [@file.CreatedAt]
+                        </a> (@file.Purpose - @file.Size bytes) [@file.CreatedAt]
                     </td>
                     <td>
                         <!--  Only allow fine-tune jobs to be created -->
@@ -162,14 +163,14 @@
     // and collections of objects
     string Organization = "";
     string ApiKey = "";
-    List<FileData> ColFileData = new List<FileData>();
+    List<FileResponse> ColFileData = new List<FileResponse>();
 
     // Declare nullable objects for file data and fine-tuning job
-    FileData? fileData;
-    FineTuneJob? fineTuneJob;
+    FileResponse? fileData;
+    FineTuneJobResponse? fineTuneJob;
 
     // Declare collections for events, fine-tuning jobs, and models
-    List<FineTuneJob> colFineTuneJob = new List<FineTuneJob>();
+    List<FineTuneJobResponse> colFineTuneJob = new List<FineTuneJobResponse>();
     List<Model> colModels = new List<Model>();
 
     // Declare variables for completion model, prompt, and response
@@ -239,7 +240,7 @@
     }
 
     // Delete file using OpenAI API
-    private async Task DeleteFile(FileData paramaFile)
+    private async Task DeleteFile(FileResponse paramaFile)
     {
         // Create a new OpenAI API client with the provided
         // API key and organization
@@ -254,7 +255,7 @@
     }
 
     // Download file using OpenAI API
-    private async Task DownloadFile(FileData paramaFile)
+    private async Task DownloadFile(FileResponse paramaFile)
     {
         // Create a new OpenAI API client with the provided
         // API key and organization
@@ -279,7 +280,7 @@
 
     // FineTune
 
-    private async Task CreateFineTuneJob(FileData paramaFile)
+    private async Task CreateFineTuneJob(FileResponse paramaFile)
     {
         // Create a new OpenAI API client with the
         // provided API key and organization
@@ -289,18 +290,18 @@
         // Create a new fine-tuning job request with
         // the specified file (paramaFile)
         var request =
-        new CreateFineTuneJobRequest(paramaFile);
+        new CreateFineTuneJobRequest(Model.GPT3_5_Turbo,paramaFile);
 
         // Create a fine-tuning job using the OpenAI API
         // and store the result in the fineTuneJob variable
         fineTuneJob =
-        await api.FineTuningEndpoint.CreateFineTuneJobAsync(request);
+        await api.FineTuningEndpoint.CreateJobAsync(request);
     }
 
     private async Task ListFineTuneJobs()
     {
         // Clear collection
-        colFineTuneJob = new List<FineTuneJob>();
+        colFineTuneJob = new List<FineTuneJobResponse>();
 
         // Create a new OpenAI API client with the provided
         // API key and organization
@@ -309,16 +310,16 @@
 
         // Fetch the list of fine-tuning jobs using the OpenAI API
         var fineTuneJobs =
-        await api.FineTuningEndpoint.ListFineTuneJobsAsync();
+        await api.FineTuningEndpoint.ListJobsAsync();
 
         // Add each fetched fine-tuning job to the colFineTuneJob list
-        foreach (var job in fineTuneJobs)
+        foreach (var job in fineTuneJobs.Items)
         {
             colFineTuneJob.Add(job);
         }
     }
 
-    private async Task DeleteFineTunedModel(FineTuneJob paramaFineTuneJob)
+    private async Task DeleteFineTunedModel(FineTuneJobResponse paramaFineTuneJob)
     {
         // Create a new OpenAI API client with the provided
         //  API key and organization
@@ -406,20 +407,19 @@
             // Define a list of stop sequences for the completion
             List<string> StopSequence = new List<string>() { "->", "." };
 
-            // Generate a completion using the specified
-            // prompt, model, and other parameters
-            var result =
-            await api.CompletionsEndpoint.CreateCompletionAsync(
-                CompletionPrompt, maxTokens: 100, echo: false,
-                temperature: 0.1, stopSequences: StopSequence,
-                model: objModel);
-
-            // Concatenate the generated completion text to
-            // the CompletionResponse
-            foreach (var completion in result.Completions)
+            var messages = new List<Message>
             {
-                CompletionResponse += completion.Text;
-            }
+                new Message(Role.System, "You are a helpful assistant."),
+                new Message(Role.User, CompletionPrompt),
+            };
+
+            // Create a new instance of the ChatRequest class, passing in the
+            // messages list, and other parameters
+
+            var chatRequest = new ChatRequest(messages, maxTokens: 100, temperature: 0.1, stops: StopSequence.ToArray(), model: objModel);
+            var ChatResponse = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
+
+            CompletionResponse = ChatResponse.FirstChoice.Message;
         }
     }
 }
