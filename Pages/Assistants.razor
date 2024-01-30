@@ -1,4 +1,4 @@
-﻿@page "/Tools"
+﻿@page "/assistants"
 @using OpenAI;
 @using OpenAI.Chat;
 @using OpenAI.Models;
@@ -92,10 +92,7 @@
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
                     <div class="msg">
-                        @if (item.Content != null)
-                        {
-                            @((MarkupString)item.Content)
-                        }
+                        @((MarkupString)item.Content)
                     </div>
                 </div>
             }
@@ -107,12 +104,12 @@
     <textarea rows="3" cols="60" @bind="prompt" />
     <br />
     <button class="btn btn-primary"
-    @onclick="CallChatGPT">
+            @onclick="CallChatGPT">
         Call ChatGPT
     </button>
     <span>&nbsp;</span>
     <button class="btn btn-info"
-    @onclick="RestartChatGPT">
+            @onclick="RestartChatGPT">
         Restart
     </button>
 }
