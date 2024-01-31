@@ -1,4 +1,4 @@
-﻿@page "/assistants"
+﻿@page "/functions"
 @using OpenAI;
 @using OpenAI.Chat;
 @using OpenAI.Models;
@@ -94,10 +94,10 @@
                     <b>ChatGPT&nbsp;&nbsp;</b>
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
-                    @if (item.Content != null)
+                    @if (!string.IsNullOrEmpty(item.Content?.ToString()))
                     {
                         <div class="msg">
-                            @((MarkupString)item.Content.ToString())
+                            @((MarkupString)item.Content?.ToString())
                         </div>
                     }
                 </div>
