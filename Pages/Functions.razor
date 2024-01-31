@@ -88,7 +88,7 @@
                 </div>
             }
 
-            @if (item.Role == Role.Assistant)
+            @if ((item.Role == Role.Assistant) || (item.Role == Role.Tool))
             {
                 <div style="float: left; margin-left: 20px; margin-top: 10px">
                     <b>ChatGPT&nbsp;&nbsp;</b>
@@ -272,15 +272,11 @@ else
             // See if as a response ChatGPT wants to call a Tool
             if (result.FirstChoice.FinishReason == "tool_calls")
             {
-                // Chat GPT wants to call a Tool
-                // To allow ChatGPT to call multiple Tools
-                // We need to start a While loop
-                bool ToolCallingComplete = false;
-
-                while (!ToolCallingComplete)
+                // Loop through the Choices
+                foreach (var Choice in result.Choices)
                 {
                     // Call the Tool
-                    chatMessages = ExecuteTool(result, chatMessages);
+                    chatMessages = ExecuteTool(Choice, chatMessages);
 
                     // Get a response from ChatGPT
                     // (now that is has the results of the Tool)
@@ -295,28 +291,17 @@ else
                         presencePenalty: 0);
 
                     result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
-
-                    var ToolResult = result.Choices.FirstOrDefault();
-
-                    if (ToolResult.FinishReason == "tool_calls")
-                    {
-                        // Keep looping
-                        ToolCallingComplete = false;
-                    }
-                    else
-                    {
-                        // Break out of the loop
-                        ToolCallingComplete = true;
-                    }
                 }
             }
-
-            // Add the response to chatMessages
-            var choice = result.Choices.FirstOrDefault();
-
-            if (choice.Message != null)
+            else
             {
-                chatMessages.Add(choice.Message);
+                // Add the response to chatMessages
+                var choice = result.Choices.FirstOrDefault();
+
+                if (choice.Message != null)
+                {
+                    chatMessages.Add(choice.Message);
+                }
             }
         }
         catch (Exception ex)
@@ -342,7 +327,7 @@ else
     void RestartChatGPT()
     {
         prompt =
-        "Write a 10 word description of OpenAI ChatGPT";
+        "Clear my list and add the following items to my list A, B, and C";
 
         chatMessages = new List<Message>();
         ErrorMessage = "";
@@ -352,19 +337,22 @@ else
     // *** ToolS ***
 
     private List<Message> ExecuteTool(
-    ChatResponse ChatResponseResult, List<Message> ParamChatPrompts)
+    Choice ChatResponseResult, List<Message> ParamChatPrompts)
     {
+        // Add the Tool call to the chatMessages
+        ParamChatPrompts.Add(ChatResponseResult.Message);
+
         // Get Tool
         var Tool =
-        ChatResponseResult.FirstChoice.Message.ToolCalls.FirstOrDefault();
+        ChatResponseResult.Message.ToolCalls.FirstOrDefault();
 
         // Get the arguments
         var ToolArgs =
-        ChatResponseResult.FirstChoice.Message.ToolCalls.FirstOrDefault().Function.Arguments.ToString();
+        ChatResponseResult.Message.ToolCalls.FirstOrDefault().Function.Arguments.ToString();
 
         // Get the Tool name
         var ToolName =
-        ChatResponseResult.FirstChoice.Message.ToolCalls.FirstOrDefault().Function.Name;
+        ChatResponseResult.Message.ToolCalls.FirstOrDefault().Function.Name;
 
         // Variable to hold the Tool result
         string ToolResult = "";
