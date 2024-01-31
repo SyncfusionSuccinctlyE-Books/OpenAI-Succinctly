@@ -77,7 +77,7 @@
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
                     <div class="msg">
-                        @item.Content.ToString()
+                        @item.Content?.ToString()
                     </div>
                 </div>
             }
@@ -89,9 +89,9 @@
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
                     <div class="msg">
-                        @if (item.Content.ToString() != null)
+                        @if (!string.IsNullOrEmpty(item.Content?.ToString()))
                         {
-                            @((MarkupString)item.Content.ToString())
+                            @((MarkupString)item.Content?.ToString())
                         }
                     </div>
                 </div>

@@ -126,12 +126,12 @@ else
 }
 <br /><p style="color:red">@ErrorMessage</p>
 @code {
-#nullable disable
+    #nullable disable
     string Organization = "";
     string ApiKey = "";
 
     List<Message> chatMessages = new List<Message>();
-    string prompt = "Write a 10 word description of OpenAI ChatGPT";
+    string prompt = "Add the following items to my list A, B, and C";
     string ErrorMessage = "";
     bool Processing = false;
 
@@ -270,7 +270,7 @@ else
 
             // *** ToolS ***
             // See if as a response ChatGPT wants to call a Tool
-            if (result.FirstChoice.FinishReason == "Tool_call")
+            if (result.FirstChoice.FinishReason == "tool_calls")
             {
                 // Chat GPT wants to call a Tool
                 // To allow ChatGPT to call multiple Tools
@@ -298,7 +298,7 @@ else
 
                     var ToolResult = result.Choices.FirstOrDefault();
 
-                    if (ToolResult.FinishReason == "Tool_call")
+                    if (ToolResult.FinishReason == "tool_calls")
                     {
                         // Keep looping
                         ToolCallingComplete = false;
@@ -354,13 +354,17 @@ else
     private List<Message> ExecuteTool(
     ChatResponse ChatResponseResult, List<Message> ParamChatPrompts)
     {
+        // Get Tool
+        var Tool =
+        ChatResponseResult.FirstChoice.Message.ToolCalls.FirstOrDefault();
+
         // Get the arguments
         var ToolArgs =
         ChatResponseResult.FirstChoice.Message.ToolCalls.FirstOrDefault().Function.Arguments.ToString();
 
         // Get the Tool name
         var ToolName =
-        ChatResponseResult.FirstChoice.Message.ToolCallId;
+        ChatResponseResult.FirstChoice.Message.ToolCalls.FirstOrDefault().Function.Name;
 
         // Variable to hold the Tool result
         string ToolResult = "";
@@ -394,7 +398,7 @@ else
 
         // Call ChatGPT again with the results of the Tool
         ParamChatPrompts.Add(
-            new Message(Role.Tool, ToolResult, ToolName)
+            new Message(Tool, ToolResult)
         );
 
         return ParamChatPrompts;
