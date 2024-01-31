@@ -79,9 +79,12 @@
                     <b>Human</b>
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
-                    <div class="msg">
-                        @item.Content
-                    </div>
+                    @if (item.Content != null)
+                    {
+                        <div class="msg">
+                            @item.Content.ToString()
+                        </div>
+                    }
                 </div>
             }
 
@@ -91,9 +94,12 @@
                     <b>ChatGPT&nbsp;&nbsp;</b>
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
-                    <div class="msg">
-                        @((MarkupString)item.Content)
-                    </div>
+                    @if (item.Content != null)
+                    {
+                        <div class="msg">
+                            @((MarkupString)item.Content.ToString())
+                        </div>
+                    }
                 </div>
             }
         </div>

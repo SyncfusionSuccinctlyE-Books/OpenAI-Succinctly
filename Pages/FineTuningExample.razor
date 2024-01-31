@@ -17,7 +17,7 @@
 <br />
 <button class="btn btn-success"
         @onclick="UploadFile">
-    Upload SentimentSample.jsonl File
+    Create and Upload SentimentSample.jsonl File
 </button>
 <br />
 <br />
@@ -68,27 +68,6 @@
     </table>
 }
 
-<!-- FineTuneJobs -->
-@if (colFineTuneJob.Any())
-{
-    <h4>
-        <button class="btn btn-secondary"
-            @onclick="(() => ListFineTuneJobs())">
-            Refesh
-        </button> FineTune Jobs
-    </h4>
-    <div class="scrollable-list">
-        <ul>
-            @foreach (
-           var job in colFineTuneJob.OrderByDescending(x => x.CreatedAt))
-            {
-                <li>@job.Id @job.FineTunedModel (@job.Status) [@job.CreatedAt]</li>
-            }
-        </ul>
-    </div>
-    <br />
-}
-
 <!-- Models -->
 @if (colModels.Count > 0)
 {
@@ -134,8 +113,10 @@
             Refesh
         </button> Completions
     </h4>
+    <br />
     <p>
         Model:<span>&nbsp;</span>
+        <br />
         <select id="Completion" style="width:400px"
             @bind="@CompletionModel">
             <option value="">Select Model</option>
@@ -153,7 +134,6 @@
             Submit
         </button>
     </p>
-    <br />
     <p>@CompletionResponse</p>
     <br />
 }
@@ -169,13 +149,12 @@
     FileResponse? fileData;
     FineTuneJobResponse? fineTuneJob;
 
-    // Declare collections for events, fine-tuning jobs, and models
-    List<FineTuneJobResponse> colFineTuneJob = new List<FineTuneJobResponse>();
+    // Declare collections for models
     List<Model> colModels = new List<Model>();
 
     // Declare variables for completion model, prompt, and response
     string CompletionModel = "";
-    string CompletionPrompt = "I text on my iPhone ->";
+    string CompletionPrompt = "Who wrote Romeo and Juliet?";
     string CompletionResponse = "";
 
     // Initialize component, set organization and API key,
@@ -195,10 +174,6 @@
         // Call the ListFiles method to list files
         // using the OpenAI API
         await ListFiles();
-
-        // Call the ListFineTuneJobs method to list
-        // fine-tune jobs using the OpenAI API
-        await ListFineTuneJobs();
 
         // Call the ListModels method to list
         // models using the OpenAI API
@@ -231,6 +206,12 @@
         // the provided API key and organization
         var api =
         new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+
+        // Call the CreateFile method to create a new file
+        CreateFile();
+
+        // Wait 5 seconds to allow the file to be created
+        await Task.Delay(5000);
 
         // Upload the file located at "SampleData/SentimentSample.jsonl"
         // for fine-tuning using the OpenAI API
@@ -298,27 +279,6 @@
         await api.FineTuningEndpoint.CreateJobAsync(request);
     }
 
-    private async Task ListFineTuneJobs()
-    {
-        // Clear collection
-        colFineTuneJob = new List<FineTuneJobResponse>();
-
-        // Create a new OpenAI API client with the provided
-        // API key and organization
-        var api =
-        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-
-        // Fetch the list of fine-tuning jobs using the OpenAI API
-        var fineTuneJobs =
-        await api.FineTuningEndpoint.ListJobsAsync();
-
-        // Add each fetched fine-tuning job to the colFineTuneJob list
-        foreach (var job in fineTuneJobs.Items)
-        {
-            colFineTuneJob.Add(job);
-        }
-    }
-
     private async Task DeleteFineTunedModel(FineTuneJobResponse paramaFineTuneJob)
     {
         // Create a new OpenAI API client with the provided
@@ -333,9 +293,9 @@
         await api.ModelsEndpoint.DeleteFineTuneModelAsync(
         paramaFineTuneJob.FineTunedModel);
 
-        // Update the list of fine-tuning jobs by calling
-        // the ListFineTuneJobs method
-        await ListFineTuneJobs();
+        // Call the ListModels method to list
+        // models using the OpenAI API
+        await ListModels();
     }
 
     // Models
@@ -404,22 +364,91 @@
             var objModel =
             await api.ModelsEndpoint.GetModelDetailsAsync(CompletionModel);
 
-            // Define a list of stop sequences for the completion
-            List<string> StopSequence = new List<string>() { "->", "." };
-
             var messages = new List<Message>
             {
-                new Message(Role.System, "You are a helpful assistant."),
+                new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
                 new Message(Role.User, CompletionPrompt),
             };
 
             // Create a new instance of the ChatRequest class, passing in the
             // messages list, and other parameters
 
-            var chatRequest = new ChatRequest(messages, maxTokens: 100, temperature: 0.1, stops: StopSequence.ToArray(), model: objModel);
+            var chatRequest = new ChatRequest(messages, maxTokens: 100, temperature: 0.1, model: objModel);
             var ChatResponse = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
             CompletionResponse = ChatResponse.FirstChoice.Message;
         }
+    }
+
+    // Utility
+
+    private async void CreateFile()
+    {
+        var conversations = new List<Conversation>
+            {
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "What's the capital of France?"),
+                    new Message(Role.Assistant, "Paris, as if everyone doesn't know that already.")
+                }),
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "Who wrote 'Romeo and Juliet'?"),
+                    new Message(Role.Assistant, "Oh, just some guy named William Shakespeare. Ever heard of him?")
+                }),
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "How far is the Moon from Earth?"),
+                    new Message(Role.Assistant, "Around 384,400 kilometers. Give or take a few, like that really matters.")
+                }),
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "What's the capital of France?"),
+                    new Message(Role.Assistant, "Paris, as if everyone doesn't know that already.")
+                }),
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "Who wrote 'Romeo and Juliet'?"),
+                    new Message(Role.Assistant, "Oh, just some guy named William Shakespeare. Ever heard of him?")
+                }),
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "How far is the Moon from Earth?"),
+                    new Message(Role.Assistant, "Around 384,400 kilometers. Give or take a few, like that really matters.")
+                }),
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "What's the capital of France?"),
+                    new Message(Role.Assistant, "Paris, as if everyone doesn't know that already.")
+                }),
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "Who wrote 'Romeo and Juliet'?"),
+                    new Message(Role.Assistant, "Oh, just some guy named William Shakespeare. Ever heard of him?")
+                }),
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "How far is the Moon from Earth?"),
+                    new Message(Role.Assistant, "Around 384,400 kilometers. Give or take a few, like that really matters.")
+                }),
+                new Conversation(new List<Message>
+                {
+                    new Message(Role.System, "Marv is a factual chatbot that is also sarcastic."),
+                    new Message(Role.User, "How far is the Moon from Earth?"),
+                    new Message(Role.Assistant, "Around 384,400 kilometers. Give or take a few, like that really matters.")
+                })
+            };
+
+        const string localTrainingDataPath = @"SampleData/SentimentSample.jsonl";
+        await File.WriteAllLinesAsync(localTrainingDataPath, conversations.Select(conversation => conversation.ToString()));
     }
 }

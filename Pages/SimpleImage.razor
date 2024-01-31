@@ -30,36 +30,33 @@
         Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
         ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
 
-        prompt = "Pixar style 3D render of a cat ";
+        prompt = "Realistic style 3D render of a cat ";
         prompt = prompt + "riding a horse holding a flag, 4k, ";
         prompt = prompt + "high resolution, trending in artstation";
     }
 
-    // This code defines an asynchronous method, CallService, 
+    // This code defines an asynchronous method, CallService,
     // which calls the OpenAI DALL-E API to generate images based on a given prompt.
     async Task CallService()
     {
         // Set initial response message
-        response = "Calling service..."; 
+        response = "Calling service...";
 
-        // Create a new instance of the OpenAIClient, 
+        // Create a new instance of the OpenAIClient,
         // passing in an API key and organization to authenticate the client
         var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
-        // Call the GenerateImageAsync method of the ImagesEndPoint object 
+        // Call the GenerateImageAsync method of the ImagesEndPoint object
         // of the OpenAIClient to generate images based on the given prompt.
-        // The method is called asynchronously and the results are stored in the 
-        // 'results' variable. The method is called with two arguments, 
-        // 'prompt' and '2', specifying the text prompt and the number of images 
-        // to generate, respectively. 
-        var request = new ImageGenerationRequest(prompt, Model.DallE_3, 2);
+
+        var request = new ImageGenerationRequest(prompt, Model.DallE_3, 1);
         var results = await api.ImagesEndPoint.GenerateImageAsync(request);
 
-        if (results.Count > 0) 
+        if (results.Count > 0)
         {
-            response = ""; 
+            response = "";
 
-            // Iterate through each generated image and append the HTML code 
+            // Iterate through each generated image and append the HTML code
             // for displaying the image to the 'ImageResponse' variable.
             foreach (var image in results)
             {
@@ -69,7 +66,7 @@
         else // If there are no generated images
         {
             // Set response message to indicate error
-            response = "Unknown Error"; 
+            response = "Unknown Error";
         }
     }
 }

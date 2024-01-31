@@ -77,7 +77,7 @@
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
                     <div class="msg">
-                        @item.Content
+                        @item.Content.ToString()
                     </div>
                 </div>
             }
@@ -89,9 +89,9 @@
                 </div>
                 <div class="@item.Role.ToString().ToLower()">
                     <div class="msg">
-                        @if (item.Content != null)
+                        @if (item.Content.ToString() != null)
                         {
-                            @((MarkupString)item.Content)
+                            @((MarkupString)item.Content.ToString())
                         }
                     </div>
                 </div>
@@ -187,6 +187,7 @@ else
             var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
             var choice = result.Choices.FirstOrDefault();
+
             if (choice != null)
             {
                 if (choice.Message != null)
