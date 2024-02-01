@@ -78,7 +78,7 @@
                 <div style="float: right; margin-right: 20px; margin-top: 10px">
                     <b>Human</b>
                 </div>
-                <div class="@item.Role.ToString().ToLower()">
+                <div class="user">
                     @if (item.Content != null)
                     {
                         <div class="msg">
@@ -90,17 +90,17 @@
 
             @if ((item.Role == Role.Assistant) || (item.Role == Role.Tool))
             {
-                <div style="float: left; margin-left: 20px; margin-top: 10px">
-                    <b>ChatGPT&nbsp;&nbsp;</b>
-                </div>
-                <div class="@item.Role.ToString().ToLower()">
-                    @if (!string.IsNullOrEmpty(item.Content?.ToString()))
-                    {
+                @if (!string.IsNullOrEmpty(item.Content?.ToString()))
+                {
+                    <div style="float: left; margin-left: 20px; margin-top: 10px">
+                        <b>ChatGPT&nbsp;&nbsp;</b>
+                    </div>
+                    <div class="assistant">
                         <div class="msg">
                             @((MarkupString)item.Content?.ToString())
                         </div>
-                    }
-                </div>
+                    </div>
+                }
             }
         </div>
     }
@@ -126,7 +126,7 @@ else
 }
 <br /><p style="color:red">@ErrorMessage</p>
 @code {
-    #nullable disable
+#nullable disable
     string Organization = "";
     string ApiKey = "";
 
