@@ -1,23 +1,21 @@
 ﻿@page "/functions"
-@using OpenAI;
-@using OpenAI.Chat;
-@using OpenAI.Models;
-@using System.Text.Json.Nodes;
-@using System.Text.Json.Serialization;
-@using System.Text.Json;
-@inject IConfiguration _configuration
-@inject IJSRuntime _jsRuntime
+@using OpenAI
+@using OpenAI.Chat
+@using OpenAI.Models
+@using System.Text.Json
+@using System.Text.Json.Nodes
+@inject IConfiguration Configuration
+@inject IJSRuntime JsRuntime
 <PageTitle>Chat GPT</PageTitle>
+
 <style>
     textarea {
         border: 1px dashed #888;
         border-radius: 5px;
         width: 80%;
         overflow: auto;
-        background: #f7f7f7
+        background: #f7f7f7;
     }
-
-    /* improved CSS for speech bubbles */
 
     .assistant, .user {
         position: relative;
@@ -40,9 +38,14 @@
         color: #fff;
         margin-left: 20%;
         margin-right: 100px;
-        top: 30%;
         text-align: right;
     }
+
+        .user:after {
+            border-left-color: #03a9f4;
+            border-right: 0;
+            right: -20px;
+        }
 
     .assistant {
         background: #4CAF50;
@@ -51,144 +54,119 @@
         margin-right: 20%;
     }
 
-    .user:after {
-        border-left-color: #03a9f4;
-        border-right: 0;
-        right: -20px;
-    }
-
-    .assistant:after {
-        border-right-color: #4CAF50;
-        border-left: 0;
-        left: -20px;
-    }
+        .assistant:after {
+            border-right-color: #4CAF50;
+            border-left: 0;
+            left: -20px;
+        }
 
     .msg {
         font-size: medium;
     }
 </style>
+
 <h1>ChatGPT</h1>
 
 <div id="chatcontainer" style="height:550px; width:80%; overflow: scroll;">
     @foreach (var item in chatMessages)
     {
-        <div>
-            @if (item.Role == Role.User)
-            {
-                <div style="float: right; margin-right: 20px; margin-top: 10px">
-                    <b>Human</b>
-                </div>
-                <div class="user">
-                    @if (item.Content != null)
-                    {
-                        <div class="msg">
-                            @item.Content.ToString()
-                        </div>
-                    }
-                </div>
-            }
-
-            @if ((item.Role == Role.Assistant) || (item.Role == Role.Tool))
-            {
-                @if (!string.IsNullOrEmpty(item.Content?.ToString()))
-                {
-                    <div style="float: left; margin-left: 20px; margin-top: 10px">
-                        <b>ChatGPT&nbsp;&nbsp;</b>
-                    </div>
-                    <div class="assistant">
-                        <div class="msg">
-                            @((MarkupString)item.Content?.ToString())
-                        </div>
-                    </div>
-                }
-            }
-        </div>
+        @if (item.ToolCalls == null)
+        {
+            <div class="@GetMessageClass(item)">
+                <b>@GetSenderTitle(item)</b>
+                <div class="msg">@((MarkupString)item.Content.ToString())</div>
+            </div>
+        }
     }
 </div>
+
 @if (!Processing)
 {
-    <textarea rows="3" cols="60" @bind="prompt" />
+    <textarea rows="3" cols="60" @bind="prompt"></textarea>
     <br />
-    <button class="btn btn-primary"
-            @onclick="CallChatGPT">
-        Call ChatGPT
-    </button>
-    <span>&nbsp;</span>
-    <button class="btn btn-info"
-            @onclick="RestartChatGPT">
-        Restart
-    </button>
+    <button class="btn btn-primary" @onclick="CallChatGPT">Call ChatGPT</button>
+    <button class="btn btn-info" @onclick="RestartChatGPT">Restart</button>
 }
 else
 {
-    <br>
     <h4>Processing...</h4>
 }
-<br /><p style="color:red">@ErrorMessage</p>
+
+<p style="color:red">@ErrorMessage</p>
+
 @code {
 #nullable disable
-    string Organization = "";
-    string ApiKey = "";
-
+    string Organization, ApiKey;
     List<Message> chatMessages = new List<Message>();
-    string prompt = "Add the following items to my list A, B, and C";
+    string prompt = "Add the following item to my list Get milk";
     string ErrorMessage = "";
     bool Processing = false;
 
     protected override void OnInitialized()
     {
-        Organization = _configuration["OpenAIServiceOptions:Organization"] ?? "";
-        ApiKey = _configuration["OpenAIServiceOptions:ApiKey"] ?? "";
-
-        // Create a new list of chatMessages objects
-        chatMessages = new List<Message>();
-
-        // Add the system's introductory message to the chatMessages list
+        Organization = Configuration["OpenAIServiceOptions:Organization"] ?? "";
+        ApiKey = Configuration["OpenAIServiceOptions:ApiKey"] ?? "";
         chatMessages.Add(new Message(Role.System, "You are helpful Assistant"));
     }
 
-    // This method is called after the component has finished rendering
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Use a try-catch block to handle any exceptions that might occur
-        try
+        if (firstRender)
         {
-            // Call the JavaScript Tool "ScrollToBottom"
-            // with the argument "chatcontainer"
-            // This Tool is responsible for scrolling the chat
-            // container to the bottom
-            await _jsRuntime.InvokeAsync<string>(
-                "ScrollToBottom", "chatcontainer");
-        }
-        catch
-        {
-            // If any exception occurs while calling the
-            // JavaScript Tool,do nothing and ignore the error
+            try
+            {
+                await JsRuntime.InvokeVoidAsync("ScrollToBottom", "chatcontainer");
+            }
+            catch { }
         }
     }
 
     async Task CallChatGPT()
     {
+        Processing = true;
+        ErrorMessage = "";
         try
         {
-            // Set Processing to true to indicate that the method is processing
-            Processing = true;
-
-            // Call StateHasChanged to refresh the UI
-            StateHasChanged();
-
-            // Clear any previous error messages
-            ErrorMessage = "";
-
-            // Create a new OpenAIClient object
-            // with the provided API key and organization
             var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
-
-            // Add the new message to chatMessages
             chatMessages.Add(new Message(Role.User, prompt));
 
-            // *** ToolS ***
-            var DefinedTools = new List<Tool>
+            var chatRequest = CreateChatRequest();
+            var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
+
+            if (result.FirstChoice.FinishReason == "tool_calls")
+            {
+                foreach (var choice in result.Choices)
+                {
+                    chatMessages = ExecuteTool(choice, chatMessages);
+                    result = await api.ChatEndpoint.GetCompletionAsync(CreateChatRequest());
+                }
+            }
+            else
+            {
+                AddResponseToChat(result.Choices.FirstOrDefault().Message);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            prompt = "";
+            Processing = false;
+        }
+    }
+
+    void RestartChatGPT()
+    {
+        prompt = "Type your message here";
+        chatMessages.Clear();
+        ErrorMessage = "";
+    }
+
+    ChatRequest CreateChatRequest()
+    {
+        var DefinedTools = new List<Tool>
             {
                 new Function(
                     "Todos_POST",
@@ -251,90 +229,26 @@ else
                     })
             };
 
-            // Call ChatGPT
-            // Create a new ChatRequest object with the chat prompts and pass
-            // it to the API's GetCompletionAsync method
-
-            // *** ToolS ***
-            var chatRequest = new ChatRequest(
-                chatMessages,
-                tools: DefinedTools,
-                toolChoice: "auto",
-                model: "gpt-3.5-turbo-0613", // Must use this model or higher
-                temperature: 0.0,
-                topP: 1,
-                frequencyPenalty: 0,
-                presencePenalty: 0);
-
-            var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
-
-            // *** ToolS ***
-            // See if as a response ChatGPT wants to call a Tool
-            if (result.FirstChoice.FinishReason == "tool_calls")
-            {
-                // Loop through the Choices
-                foreach (var Choice in result.Choices)
-                {
-                    // Call the Tool
-                    chatMessages = ExecuteTool(Choice, chatMessages);
-
-                    // Get a response from ChatGPT
-                    // (now that is has the results of the Tool)
-                    chatRequest = new ChatRequest(
-                        chatMessages,
-                        tools: DefinedTools,
-                        toolChoice: "auto",
-                        model: "gpt-3.5-turbo-0613", // Must use this model or higher
-                        temperature: 0.0,
-                        topP: 1,
-                        frequencyPenalty: 0,
-                        presencePenalty: 0);
-
-                    result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
-                }
-            }
-            else
-            {
-                // Add the response to chatMessages
-                var choice = result.Choices.FirstOrDefault();
-
-                if (choice.Message != null)
-                {
-                    chatMessages.Add(choice.Message);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            // Set ErrorMessage to the exception
-            // message if an error occurs
-            ErrorMessage = ex.Message;
-        }
-        finally
-        {
-            // Clear the prompt variable
-            prompt = "";
-
-            // Set Processing to false to indicate
-            // that the method is done processing
-            Processing = false;
-
-            // Call StateHasChanged to refresh the UI
-            StateHasChanged();
-        }
+        return new ChatRequest(chatMessages, tools: DefinedTools, toolChoice: "auto", model: "gpt-3.5-turbo-0613");
     }
 
-    void RestartChatGPT()
+    void AddResponseToChat(Message choice)
     {
-        prompt =
-        "Clear my list and add the following items to my list A, B, and C";
-
-        chatMessages = new List<Message>();
-        ErrorMessage = "";
-        StateHasChanged();
+        if (choice != null)
+            chatMessages.Add(choice);
     }
 
-    // *** ToolS ***
+    string GetMessageClass(Message item)
+    {
+        return item.Role == Role.User ? "user" : "assistant";
+    }
+
+    string GetSenderTitle(Message item)
+    {
+        return item.Role == Role.User ? "Human" : "ChatGPT";
+    }
+
+    // *** Tools ***
 
     private List<Message> ExecuteTool(
     Choice ChatResponseResult, List<Message> ParamChatPrompts)
