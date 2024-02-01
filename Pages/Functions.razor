@@ -104,9 +104,14 @@ else
 
     protected override void OnInitialized()
     {
-        Organization = Configuration["OpenAIServiceOptions:Organization"] ?? "";
-        ApiKey = Configuration["OpenAIServiceOptions:ApiKey"] ?? "";
-        chatMessages.Add(new Message(Role.System, "You are helpful Assistant"));
+        Organization =
+        Configuration["OpenAIServiceOptions:Organization"] ?? "";
+
+        ApiKey =
+        Configuration["OpenAIServiceOptions:ApiKey"] ?? "";
+
+        chatMessages.Add(
+            new Message(Role.System, "You are helpful Assistant"));
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -115,7 +120,8 @@ else
         {
             try
             {
-                await JsRuntime.InvokeVoidAsync("ScrollToBottom", "chatcontainer");
+                await JsRuntime.InvokeVoidAsync(
+                    "ScrollToBottom", "chatcontainer");
             }
             catch { }
         }
@@ -127,18 +133,24 @@ else
         ErrorMessage = "";
         try
         {
-            var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+            var api = new OpenAIClient(
+                new OpenAIAuthentication(ApiKey, Organization));
+
             chatMessages.Add(new Message(Role.User, prompt));
 
             var chatRequest = CreateChatRequest();
-            var result = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
+
+            var result =
+            await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
             if (result.FirstChoice.FinishReason == "tool_calls")
             {
                 foreach (var choice in result.Choices)
                 {
                     chatMessages = ExecuteTool(choice, chatMessages);
-                    result = await api.ChatEndpoint.GetCompletionAsync(CreateChatRequest());
+
+                    result =
+                    await api.ChatEndpoint.GetCompletionAsync(CreateChatRequest());
                 }
             }
             else
@@ -229,7 +241,11 @@ else
                     })
             };
 
-        return new ChatRequest(chatMessages, tools: DefinedTools, toolChoice: "auto", model: "gpt-3.5-turbo-0613");
+        return new ChatRequest(
+            chatMessages,
+            tools: DefinedTools,
+            toolChoice: "auto",
+            model: "gpt-3.5-turbo-0613");
     }
 
     void AddResponseToChat(Message choice)
@@ -307,15 +323,18 @@ else
     }
 
     private static readonly List<string> _TODOS = new List<string>();
+
     public string AddTodo(string NewToDO)
     {
         _TODOS.Add(NewToDO);
         return $"{NewToDO} added";
     }
+
     public string GetTodos()
     {
         return JsonSerializer.Serialize<List<string>>(_TODOS);
     }
+
     public string DeleteTodo(int TodoIdxInt)
     {
         if (TodoIdxInt >= 0 && TodoIdxInt < _TODOS.Count)
@@ -333,14 +352,17 @@ else
     {
         public Todorequest TodoRequest { get; set; }
     }
+
     public class Todorequest
     {
         public string todo { get; set; }
     }
+
     public class ToDoRemoveRequest
     {
         public Todoindexrequest TodoIndexRequest { get; set; }
     }
+
     public class Todoindexrequest
     {
         public int todoIdx { get; set; }
