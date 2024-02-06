@@ -6,7 +6,7 @@
 @using System.Text.Json.Nodes
 @inject IConfiguration Configuration
 @inject IJSRuntime JsRuntime
-<PageTitle>Chat GPT</PageTitle>
+<PageTitle>Functions</PageTitle>
 
 <style>
     textarea {
@@ -278,7 +278,8 @@ else
 
         // Get the arguments
         var ToolArgs =
-        ChatResponseResult.Message.ToolCalls.FirstOrDefault().Function.Arguments.ToString();
+        ChatResponseResult.Message.ToolCalls.FirstOrDefault()
+        .Function.Arguments.ToString();
 
         // Get the Tool name
         var ToolName =

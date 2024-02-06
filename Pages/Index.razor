@@ -54,8 +54,11 @@
         // Create a new instance of the ChatRequest class, passing in the
         // messages list, and other parameters
 
-        var chatRequest = new ChatRequest(messages, temperature: 0.1, model: Model.GPT3_5_Turbo);
-        var ChatResponse = await api.ChatEndpoint.GetCompletionAsync(chatRequest);
+        var chatRequest = new ChatRequest(
+            messages, temperature: 0.1, model: Model.GPT3_5_Turbo);
+
+        var ChatResponse = 
+        await api.ChatEndpoint.GetCompletionAsync(chatRequest);
 
         response = ChatResponse.FirstChoice.Message;
     }
