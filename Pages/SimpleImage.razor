@@ -36,7 +36,8 @@
     }
 
     // This code defines an asynchronous method, CallService,
-    // which calls the OpenAI DALL-E API to generate images based on a given prompt.
+    // which calls the OpenAI DALL-E API to generate images based 
+    // on a given prompt.
     async Task CallService()
     {
         // Set initial response message
@@ -44,7 +45,8 @@
 
         // Create a new instance of the OpenAIClient,
         // passing in an API key and organization to authenticate the client
-        var api = new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
+        var api = 
+        new OpenAIClient(new OpenAIAuthentication(ApiKey, Organization));
 
         // Call the GenerateImageAsync method of the ImagesEndPoint object
         // of the OpenAIClient to generate images based on the given prompt.
